@@ -1,0 +1,4591 @@
+--[[
+	Welcome to RoXploit Tiny Hub Gui!
+	Credits:
+			KrystalTeam - rLua Coder & UI Designer
+--]]
+local gParent = game:GetService("CoreGui");--game.Players.LocalPlayer.PlayerGui;
+
+local ContentProvider = game:GetService("ContentProvider");
+local Workspace = game:GetService("Workspace");
+local Players = game:GetService("Players");
+local MarketPlace = game:GetService("MarketplaceService");
+local UserInput = game:GetService("UserInputService");
+local Debris = game:GetService("Debris");
+
+local LocalPlayer = Players.LocalPlayer
+
+local LocalData = Instance.new("Folder",gParent)
+local Selected = Instance.new("Folder",LocalData)
+local Favorite = Instance.new("Folder",LocalData)
+local BanFolder = Instance.new("Folder",LocalData)
+--local WaypointFolder = Instance.new("Folder",LocalData)
+
+local aScrollingFrame3;
+
+local aDesc8;
+local aName10;
+local aUserImage11;
+local aUserId13;
+local aAge16;
+local aMembershipType17;
+local Favorited;
+
+local changing_keys = false
+
+local ScrollBarGfx = "rbxassetid://213329158" --299649662
+
+local plastsearch = "";
+local blastsearch = "";
+
+local InfJump = false;
+local NoClip = Instance.new("BoolValue");
+local NoClipUseHotkey = true;
+local NoClipToggleKey = Instance.new("StringValue")
+NoClipToggleKey.Value = tostring(Enum.KeyCode.Up);
+
+local XRay = Instance.new("BoolValue");
+local XRayUseHotkey = true;
+local XRayToggleKey = Instance.new("StringValue")
+XRayToggleKey.Value = tostring(Enum.KeyCode.X);
+
+local Teleport = Instance.new("BoolValue");
+local TeleportToggleKey = Instance.new("StringValue")
+TeleportToggleKey.Value = tostring(Enum.KeyCode.T);
+
+local ObjColorTable1 = {};
+local ObjColorTable2 = {};
+local ObjColorTable3 = {};
+local ObjColorTable4 = {};
+
+EnableEsp = true;
+EspBox = false;
+EspBoxColor = Color3.new(1,0,0);
+EspNPCColor = Color3.new(1,1,1);
+LineEsp = false;
+HealthEsp = false;
+NameEsp = false;
+UseTeamColor = false;
+EspMe = false;
+uDrawDistance = false;
+CenterOfScreen = false;
+TopOfScreen = false;
+EspMyTeam = true;
+EspEnemyTeam = true;
+EspNpc = false;
+CrossHair = false;
+CrossHairColor = Color3.new(1,0,0);
+BehindWarning = false;
+
+local E = {
+	["ESettings"] = {
+		["sBanEnabled"] = true;
+		["sBanOwner"] = false;
+		["sPrivateServer"] = false;
+		["sNotifications"] = true;
+		["sChatBubble"] = "Blue";
+	};
+	["EColors"] = {
+		["cDarkBlue"] = "4_86_145";--Color3.new(4/255, 86/255, 145/255);
+		["cLightBlue"] = "5_126_211";--Color3.new(5/255, 126/255, 211/255);
+		["cWhite"] = "255_255_255";--Color3.new(255/255, 255/255, 255/255);
+		["cYellow"] = "255_255_0";--Color3.new(255/255, 255/255, 0);
+	};
+	["EBans"] = {
+		"Roblox";
+	};
+}
+
+local DarkBlue = Color3.new(4/255, 86/255, 145/255);
+local LightBlue = Color3.new(5/255, 126/255, 211/255);
+local White = Color3.new(255/255, 255/255, 255/255);
+local Yellow = Color3.new(255/255, 255/255, 0);
+
+local Settings = {};
+function PackSettings()
+	E["ESettings"]["sBanEnabled"] = Settings.BanEnabled;
+	E["ESettings"]["sBanOwner"] = Settings.BanOwner;
+	E["ESettings"]["sPrivateServer"] = Settings.PrivateServer;
+	E["ESettings"]["sNotifications"] = Settings.Notifications;
+	E["ESettings"]["sChatBubble"] = Settings.ChatBubble;
+end
+
+function PackColors()
+	E["EColors"]["cDarkBlue"] = math.ceil(DarkBlue.r*255) .. "_" .. math.ceil(DarkBlue.g*255) .. "_" .. math.ceil(DarkBlue.b*255)
+	E["EColors"]["cLightBlue"] = math.ceil(LightBlue.r*255) .. "_" .. math.ceil(LightBlue.g*255) .. "_" .. math.ceil(LightBlue.b*255)
+	E["EColors"]["cWhite"] = math.ceil(White.r*255) .. "_" .. math.ceil(White.g*255) .. "_" .. math.ceil(White.b*255)
+	E["EColors"]["cYellow"] = math.ceil(Yellow.r*255) .. "_" .. math.ceil(Yellow.g*255) .. "_" .. math.ceil(Yellow.b*255)
+end
+
+function PackBans()
+	local TotalCurrent = #E["EBans"];
+	for i,v in pairs(BanFolder:GetChildren()) do
+		TotalCurrent = TotalCurrent + 1;
+		E["EBans"][TotalCurrent] = v.Name;
+	end
+end
+
+
+function EncryptSettings()
+	PackSettings();
+	PackColors();
+	PackBans();
+	local result = "";
+	local count,total = 0,0;
+	E.EBans = {}
+	for i,v in pairs(BanFolder:GetChildren()) do
+		table.insert(E.EBans, v.Name)
+	end
+	for i,v in pairs(E) do
+		count,total = 0,0;
+		result = result .. i .. ":"
+		for k,f in pairs(v)do
+			total = total + 1;
+		end
+		for k,f in pairs(v)do
+			result = result .. k .. ":" .. tostring(f)
+			count = count + 1;
+			if tonumber(count) < tonumber(total) then
+				result = result .. ","
+			end
+		end
+		result = result .. ";"
+	end
+	return result;
+end
+
+function UnpackSettings(str)
+	local Ends = {}
+	local Begins = {}
+	for w in string.gmatch(str, ";") do
+		table.insert(Ends,w)
+	end
+	for w in string.gmatch(str, ":") do
+		table.insert(Begins,w)
+	end
+	local last = 1;
+	for i=1, (#Ends) do
+		local start = string.find(str,":",last)
+		local tend = string.find(str,";",last)
+		local cutstr = string.sub(str,last,tend)
+		local total = {};
+		for w in string.gmatch(cutstr, ":") do
+			table.insert(total,w)
+		end
+		if start < tend then
+			local thetable = string.sub(str,last,start - 1)
+			local lastfind = start+1;
+			for i=1, (#total-1) do
+				local dots = string.find(str,":",lastfind)
+				local comas = string.find(str,",",lastfind)
+				local lastin = string.find(str,";",last)
+				local left = string.sub(str,lastfind,dots - 1)
+				local right;
+				if comas and comas < lastin then
+					right = string.sub(str,dots + 1,comas - 1)
+				else
+					right = string.sub(str,dots + 1,(lastin-1))
+				end
+				if right == "true" then
+					E[thetable][left] = true;
+				elseif right == "false" then
+					E[thetable][left] = false;
+				elseif thetable == "EBans" then
+					if BanFolder:FindFirstChild(tostring(right)) == nil then
+						local a=Instance.new("StringValue")
+						a.Name = tostring(right)
+						a.Value = tostring(right)
+						a.Parent = BanFolder
+					end
+				else
+					E[thetable][left] = right;
+				end
+				if comas and comas < lastin then
+					lastfind = comas+1;
+				else
+					lastfind = string.len(cutstr) + 1;
+				end
+			end
+		end
+		last = tend+1;
+	end
+end
+
+function UnpackColors(t)
+	local colors = {
+		db = string.gsub(E["EColors"]["cDarkBlue"], "_", ",");
+		lb = string.gsub(E["EColors"]["cLightBlue"], "_", ",");
+		w = string.gsub(E["EColors"]["cWhite"], "_", ",");
+		y = string.gsub(E["EColors"]["cYellow"], "_", ",");
+	}
+
+	for i,v in pairs(colors) do
+		local first = string.find(v,",",1)
+		local second = string.find(v,",",first+1)
+		local third = string.find(v,",",second+1)
+		local Red = string.sub(v, 1, first - 1)
+		local Blue = string.sub(v, first + 1, second - 1)
+		local Green = string.sub(v, second + 1, string.len(v))
+		if i == "db" then
+			DarkBlue = Color3.new(tonumber(Red/255),tonumber(Blue/255),tonumber(Green/255))
+		elseif i == "lb" then
+			LightBlue = Color3.new(tonumber(Red/255),tonumber(Blue/255),tonumber(Green/255))
+		elseif i == "w" then
+			White = Color3.new(tonumber(Red/255),tonumber(Blue/255),tonumber(Green/255))
+		elseif i == "y" then
+			Yellow = Color3.new(tonumber(Red/255),tonumber(Blue/255),tonumber(Green/255))
+		end
+	end
+end
+-- default EColors:cLightBlue:7_128_213,cWhite:255_255_255,cDarkBlue:6_88_147,cYellow:255_255_0;ESettings:sPrivateServer:false,sBanEnabled:true,sChatBubble:Red,sBanOwner:false,sNotifications:true;EBans:1:Roblox;
+UnpackSettings("EColors:cLightBlue:50_50_50,cWhite:255_255_255,cDarkBlue:25_25_25,cYellow:255_255_0;ESettings:sPrivateServer:false,sBanEnabled:true,sChatBubble:Red,sBanOwner:false,sNotifications:true;EBans:1:Roblox;")
+UnpackColors(E.EColors) -- above line to load new settings
+
+Settings = {
+	BanEnabled = E["ESettings"]["sBanEnabled"];
+	BanOwner = E["ESettings"]["sBanOwner"];
+	PrivateServer = E["ESettings"]["sPrivateServer"];
+	Notifications = E["ESettings"]["sNotifications"];
+	ChatBubble = E["ESettings"]["sChatBubble"];
+}
+
+--print(EncryptSettings()) -- use this to make custom settings
+
+
+local RainTaco = false;
+
+function TinyHubNotification(a,b,c,d)
+	if gParent == game.CoreGui then
+		if Settings.Notifications == true then
+			
+			game:GetService("StarterGui"):SetCore("SendNotification", {
+				Title = a,
+				Text = b,
+				Icon = c,
+				Duration = d
+			})--:WaitForChild("RobloxGui").SendNotification:Fire(a, b, c, d) -- rbxassetid://331959655
+		end
+	end
+end
+
+local OrigDarkBlue = Color3.new(4/255, 86/255, 145/255);
+local OrigLightBlue = Color3.new(5/255, 126/255, 211/255);
+local OrigWhite = Color3.new(255/255, 255/255, 255/255);
+local OrigYellow = Color3.new(255/255, 255/255, 0);
+
+local SFrame;
+
+--ButtonSingle, ButtonDouble, ColorPicker, TextButton
+
+function AddCommands(theTable,...)
+	local args = {...}
+	for i, v in pairs(args) do
+		table.insert(theTable, v)
+	end
+end
+
+--Commands Tab
+local Functions = {}
+AddCommands(Functions,
+	{
+		["name"] = "Ban",
+		["type"] = "ButtonSingle",
+		["func"] = function()
+			RunOnSelected(function(me)
+				if me ~= nil then
+					if me.Character then
+						local banplayer = Instance.new("StringValue");
+						banplayer.Name = me.Name;
+						banplayer.Value = me.Name;
+						banplayer.Parent = BanFolder;
+					end
+				end
+			end)
+		end
+	},
+	{
+		["name"] = "Kick",
+		["type"] = "ButtonSingle",
+		["func"] = function()
+			RunOnSelected(function(me)
+				if me ~= nil then
+					if me.Character then
+						me:Destroy();
+					end
+				end
+			end)
+		end
+	},
+	{
+		["name"] = "Punish",
+		["type"] = "ButtonDouble",
+		["button1text"] = "Punish",
+		["button2text"] = "UnPunish",
+		["func1"] = function()
+			RunOnSelected(function(me)
+				if me ~= nil then
+					if me.Character then
+						me.Character.Parent = game.Lighting;
+					end
+				end
+			end)
+		end,
+		["func2"] = function()
+			RunOnSelected(function(me)
+				if me ~= nil then
+					if me.Character then
+						me.Character.Parent = Workspace;
+					end
+				end
+			end)
+		end
+	},
+	{
+		["name"] = "Kill",
+		["type"] = "ButtonSingle",
+		["func"] = function()
+			RunOnSelected(function(me)
+				if me ~= nil then
+					if me.Character then
+						me.Character:BreakJoints();
+					end
+				end
+			end)
+		end
+	},
+	{
+		["name"] = "Respawn",
+		["type"] = "ButtonSingle",
+		["func"] = function()
+			RunOnSelected(function(me)
+				if me ~= nil then
+					local ack2 = Instance.new("Model")
+					ack2.Parent = workspace
+					local ack4 = Instance.new("Part")
+					ack4.Transparency = 1
+					ack4.CanCollide = false
+					ack4.Anchored = true
+					ack4.Name = "Torso"
+					ack4.Position = Vector3.new(10000,10000,10000)
+					ack4.Parent = ack2
+					local ack3 = Instance.new("Humanoid")
+					ack3.Torso = ack4
+					ack3.Parent = ack2
+					me.Character = ack2
+				end
+			end)
+		end
+	},
+	{
+		["name"] = "Explode",
+		["type"] = "ButtonSingle",
+		["func"] = function()
+			RunOnSelected(function(me)
+				if me ~= nil then
+					if me.Character then
+						if me.Character:FindFirstChild("Torso") ~= nil then
+							Instance.new("Explosion",me.Character).Position = me.Character:FindFirstChild("Torso").Position;
+						end
+					end
+				end
+			end)
+		end
+	},
+	{
+		["name"] = "Heal",
+		["type"] = "ButtonSingle",
+		["func"] = function()
+			RunOnSelected(function(me)
+				if me ~= nil then
+					if me.Character then
+						ExeOnAllKind(me.Character, "Humanoid", function(obj)
+							if obj ~= nil then
+								obj.Health = obj.MaxHealth;
+							end
+						end)
+					end
+				end
+			end)
+		end
+	},
+	{
+		["name"] = "Damage",
+		["type"] = "TextButton",
+		["buttontext"] = "Apply",
+		["value"] = "25",
+		["Numeric"] = "true",
+		["func"] = function(var)
+			RunOnSelected(function(me)
+				if me ~= nil then
+					if me.Character then
+						ExeOnAllKind(me.Character, "Humanoid", function(obj)
+							if obj ~= nil then
+								obj.Health = obj.Health - tonumber(var);
+							end
+						end)
+					end
+				end
+			end)
+		end
+	},
+	{
+		["name"] = "Health",
+		["type"] = "TextButton",
+		["buttontext"] = "Set",
+		["value"] = "100",
+		["Numeric"] = "true",
+		["func"] = function(var)
+			RunOnSelected(function(me)
+				if me ~= nil then
+					if me.Character then
+						if me.Character:FindFirstChild("Humanoid") ~= nil then
+							me.Character:FindFirstChild("Humanoid").Health = tonumber(var);
+						end
+					end
+				end
+			end)
+		end
+	},
+	{
+		["name"] = "Max Health",
+		["type"] = "TextButton",
+		["buttontext"] = "Set",
+		["value"] = "100",
+		["Numeric"] = "true",
+		["func"] = function(var)
+			RunOnSelected(function(me)
+				if me ~= nil then
+					if me.Character then
+						if me.Character:FindFirstChild("Humanoid") ~= nil then
+							me.Character:FindFirstChild("Humanoid").MaxHealth = tonumber(var)
+						end
+					end
+				end
+			end)
+		end
+	},
+	{
+		["name"] = "Walk Speed",
+		["type"] = "TextButton",
+		["buttontext"] = "Set",
+		["value"] = "16",
+		["Numeric"] = "true",
+		["func"] = function(var)
+			RunOnSelected(function(me)
+				if me ~= nil then
+					if me.Character then
+						if me.Character:FindFirstChild("Humanoid") ~= nil then
+							me.Character:FindFirstChild("Humanoid").WalkSpeed = tonumber(var);
+						end
+					end
+				end
+			end)
+		end
+	},
+	{
+		["name"] = "Jump Power",
+		["type"] = "TextButton",
+		["buttontext"] = "Set",
+		["value"] = "50",
+		["Numeric"] = "true",
+		["func"] = function(var)
+			RunOnSelected(function(me)
+				if me ~= nil then
+					if me.Character then
+						if me.Character:FindFirstChild("Humanoid") ~= nil then
+							me.Character:FindFirstChild("Humanoid").JumpPower = tonumber(var);
+						end
+					end
+				end
+			end)
+		end
+	},
+	{
+		["name"] = "ForceField",
+		["type"] = "ButtonDouble",
+		["button1text"] = "Add",
+		["button2text"] = "Remove",
+		["func1"] = function()
+			RunOnSelected(function(me)
+				if me ~= nil then
+					if me.Character then
+						Instance.new("ForceField", me.Character);
+					end
+				end
+			end)
+		end,
+		["func2"] = function()
+			RunOnSelected(function(me)
+				if me ~= nil then
+					if me.Character then
+						ExeOnAllKind(me.Character, "ForceField", function(obj)
+							if obj ~= nil then
+								obj:Remove()
+							end
+						end)
+					end
+				end
+			end)
+		end
+	},
+	{
+		["name"] = "BuildTools",
+		["type"] = "ButtonDouble",
+		["button1text"] = "Give",
+		["button2text"] = "Remove",
+		["func1"] = function()
+			RunOnSelected(function(me)
+				if me ~= nil then
+					if me.Backpack ~= nil then
+						local T1 = Instance.new("HopperBin",me.Backpack); T1.BinType = "Grab"; T1.Name = "Grab"
+						local T2 = Instance.new("HopperBin",me.Backpack); T2.BinType = "Clone"; T2.Name = "Clone"
+						local T3 = Instance.new("HopperBin",me.Backpack); T3.BinType = "Hammer"; T3.Name = "Hammer"
+					end
+				end
+			end)
+		end,
+		["func2"] = function()
+			RunOnSelected(function(me)
+				if me ~= nil then
+					if me.Backpack ~= nil then
+						for k,c in pairs(me.Backpack:GetChildren()) do
+							if c.Name == "Grab" or c.Name == "Clone" or c.Name == "Hammer" then
+								c:Remove()
+							end
+						end
+					end
+				end
+			end)
+		end
+	},
+	{
+		["name"] = "Set Scale",
+		["type"] = "TextButton",
+		["buttontext"] = "Set",
+		["value"] = "1",
+		["Numeric"] = "true",
+		["func"] = function(var)
+			RunOnSelected(function(me)
+				if me ~= nil then
+					if me.Character then
+						SetCharacterScale(me.Character,tonumber(var))
+					end
+				end
+			end)
+		end
+	},
+	{
+		["name"] = "Visibility",
+		["type"] = "ButtonDouble",
+		["button1text"] = "InVisible",
+		["button2text"] = "Visible",
+		["func1"] = function()
+			RunOnSelected(function(me)
+				if me ~= nil then
+					if me.Character then
+						ExeOnAllKind(me.Character,"BasePart",function(part) part.Transparency = 1; end)
+						ExeOnAllKind(me.Character,"Decal",function(dec) dec.Transparency = 1; end)
+					end
+				end
+			end)
+		end,
+		["func2"] = function()
+			RunOnSelected(function(me)
+				if me ~= nil then
+					if me.Character then
+						ExeOnAllKind(me.Character,"BasePart",function(part) if part.Name ~= "HumanoidRootPart" then part.Transparency = 0; end; end)
+						ExeOnAllKind(me.Character,"Decal",function(dec) dec.Transparency = 0; end)
+					end
+				end
+			end)
+		end
+	},
+	{
+		["name"] = "Character Mobility",
+		["type"] = "ButtonDouble",
+		["button1text"] = "Freeze",
+		["button2text"] = "Thaw",
+		["func1"] = function()
+			RunOnSelected(function(me)
+				if me ~= nil then
+					if me.Character then
+						ExeOnAllKind(me.Character,"BasePart",function(part) part.Anchored = true; end)
+					end
+				end
+			end)
+		end,
+		["func2"] = function()
+			RunOnSelected(function(me)
+				if me ~= nil then
+					if me.Character then
+						ExeOnAllKind(me.Character,"BasePart",function(part) part.Anchored = false; end)
+					end
+				end
+			end)
+		end
+	},
+	{
+		["name"] = "Camera Mode",
+		["type"] = "DropDown",
+		["FirstChoice"] = "Classic",
+		["Choices"] = {
+			["FirstPerson"]=function()
+				RunOnSelected(function(me)
+					if me ~= nil then
+						me.CameraMode = Enum.CameraMode.LockFirstPerson
+					end
+				end)
+			end,
+			["Classic"]=function()
+				RunOnSelected(function(me)
+					if me ~= nil then
+						me.CameraMode = Enum.CameraMode.Classic
+					end
+				end)
+			end
+		}
+	},
+	{
+		["name"] = "Camera Occlusion Mode",
+		["type"] = "DropDown",
+		["FirstChoice"] = "Zoom",
+		["Choices"] = {
+			["Zoom"]=function()
+				RunOnSelected(function(me)
+					if me ~= nil then
+						me.DevCameraOcclusionMode = Enum.DevCameraOcclusionMode.Zoom
+					end
+				end)
+			end,
+			["InvisiCam"]=function()
+				RunOnSelected(function(me)
+					if me ~= nil then
+						me.DevCameraOcclusionMode = Enum.DevCameraOcclusionMode.Invisicam
+					end
+				end)
+			end
+		}
+	},
+	{
+		["name"] = "Camera Movement Mode",
+		["type"] = "DropDown",
+		["FirstChoice"] = "UserChoice",
+		["Choices"] = {
+			["UserChoice"]=function()
+				RunOnSelected(function(me)
+					if me ~= nil then
+						me.DevComputerCameraMovementMode = Enum.DevComputerCameraMovementMode.UserChoice
+						me.DevTouchCameraMovementMode = Enum.DevTouchCameraMovementMode.UserChoice
+					end
+				end)
+			end,
+			["Classic"]=function()
+				RunOnSelected(function(me)
+					if me ~= nil then
+						me.DevComputerCameraMovementMode = Enum.DevComputerCameraMovementMode.Classic
+						me.DevTouchCameraMovementMode = Enum.DevTouchCameraMovementMode.Classic
+					end
+				end)
+			end,
+			["Follow"]=function()
+				RunOnSelected(function(me)
+					if me ~= nil then
+						me.DevComputerCameraMovementMode = Enum.DevComputerCameraMovementMode.Follow
+						me.DevTouchCameraMovementMode = Enum.DevTouchCameraMovementMode.Follow
+					end
+				end)
+			end
+		}
+	},
+	{
+		["name"] = "Camera Maximum Zoom",
+		["type"] = "TextButton",
+		["buttontext"] = "Set",
+		["value"] = "400",
+		["Numeric"] = "true",
+		["func"] = function(var)
+			RunOnSelected(function(me)
+				if me ~= nil then
+					me.CameraMaxZoomDistance = tonumber(var);
+				end
+			end)
+		end
+	},
+	{
+		["name"] = "Camera Minimum Zoom",
+		["type"] = "TextButton",
+		["buttontext"] = "Set",
+		["value"] = "0.5",
+		["Numeric"] = "true",
+		["func"] = function(var)
+			RunOnSelected(function(me)
+				if me ~= nil then
+					me.CameraMinZoomDistance = tonumber(var);
+				end
+			end)
+		end
+	},
+	{
+		["name"] = "Health Display Distance",
+		["type"] = "TextButton",
+		["buttontext"] = "Set",
+		["value"] = "100",
+		["Numeric"] = "true",
+		["func"] = function(var)
+			RunOnSelected(function(me)
+				if me ~= nil then
+					me.HealthDisplayDistance = tonumber(var);
+				end
+			end)
+		end
+	},
+	{
+		["name"] = "Name Display Distance",
+		["type"] = "TextButton",
+		["buttontext"] = "Set",
+		["value"] = "100",
+		["Numeric"] = "true",
+		["func"] = function(var)
+			RunOnSelected(function(me)
+				if me ~= nil then
+					me.NameDisplayDistance = tonumber(var);
+				end
+			end)
+		end
+	},
+	{
+		["name"] = "ChatBubble",
+		["type"] = "TextButton",
+		["buttontext"] = "Chat",
+		["value"] = "Hi there.",
+		["func"] = function(var)
+			RunOnSelected(function(me)
+				if me ~= nil then
+					if me.Character then
+						if me.Character:FindFirstChild("Head") ~= nil then
+							if Settings.ChatBubble == "Blue" then
+								ChatBubbleType = Enum.ChatColor.Blue
+							elseif Settings.ChatBubble == "Red" then
+								ChatBubbleType = Enum.ChatColor.Red
+							elseif Settings.ChatBubble == "Green" then
+								ChatBubbleType = Enum.ChatColor.Green
+							end
+							game:GetService("Chat"):Chat(me.Character:FindFirstChild("Head"),tostring(var),ChatBubbleType)
+						end
+					end
+				end
+			end)
+		end
+	}
+)
+
+--Environment Tab
+local WFunctions = {}
+AddCommands(WFunctions,
+	{
+		["name"] = "Gravity",
+		["type"] = "TextButton",
+		["buttontext"] = "Set",
+		["value"] = math.floor(workspace.Gravity),
+		["Numeric"] = "true",
+		["func"] = function(var)
+			workspace.Gravity = tonumber(var);
+		end
+	},
+	{
+		["name"] = "Water Color",
+		["type"] = "ColorPicker",
+		["RGB"] = workspace.Terrain.WaterColor,
+		["func"] = function(color)
+			workspace.Terrain.WaterColor = color;
+		end
+	},
+	{
+		["name"] = "Water Transparency",
+		["type"] = "TextButton",
+		["buttontext"] = "Set",
+		["value"] = math.floor(workspace.Terrain.WaterTransparency),
+		["Numeric"] = "true",
+		["func"] = function(var)
+			workspace.Terrain.WaterTransparency = tonumber(var);
+		end
+	},
+	{
+		["name"] = "Water Wave Size",
+		["type"] = "TextButton",
+		["buttontext"] = "Set",
+		["value"] = math.floor(workspace.Terrain.WaterWaveSize),
+		["Numeric"] = "true",
+		["func"] = function(var)
+			workspace.Terrain.WaterWaveSize = tonumber(var);
+		end
+	},
+	{
+		["name"] = "Water Wave Speed",
+		["type"] = "TextButton",
+		["buttontext"] = "Set",
+		["value"] = math.floor(workspace.Terrain.WaterWaveSpeed),
+		["Numeric"] = "true",
+		["func"] = function(var)
+			workspace.Terrain.WaterWaveSpeed = tonumber(var);
+		end
+	},
+	{
+		["name"] = "Ambient",
+		["type"] = "ColorPicker",
+		["RGB"] = game.Lighting.Ambient,
+		["func"] = function(color)
+			game.Lighting.Ambient = color;
+		end
+	},
+	{
+		["name"] = "Outdoor Ambient",
+		["type"] = "ColorPicker",
+		["RGB"] = game.Lighting.OutdoorAmbient,
+		["func"] = function(color)
+			game.Lighting.OutdoorAmbient = color;
+		end
+	},
+	{
+		["name"] = "Shadow Color",
+		["type"] = "ColorPicker",
+		["RGB"] = game.Lighting.ShadowColor,
+		["func"] = function(color)
+			game.Lighting.ShadowColor = color;
+		end
+	},
+	{
+		["name"] = "Global Shadows",
+		["type"] = "ButtonDouble",
+		["button1text"] = "On",
+		["button2text"] = "Off",
+		["func1"] = function()
+			game.Lighting.GlobalShadows = true;
+		end,
+		["func2"] = function()
+			game.Lighting.GlobalShadows = false;
+		end
+	},
+	{
+		["name"] = "Fog Color",
+		["type"] = "ColorPicker",
+		["RGB"] = game.Lighting.FogColor,
+		["func"] = function(color)
+			game.Lighting.FogColor = color;
+		end
+	},
+	{
+		["name"] = "Fog End",
+		["type"] = "TextButton",
+		["buttontext"] = "Set",
+		["value"] = math.floor(game.Lighting.FogEnd),
+		["Numeric"] = "true",
+		["func"] = function(var)
+			game.Lighting.FogEnd = tonumber(var);
+		end
+	},
+	{
+		["name"] = "Fog Start",
+		["type"] = "TextButton",
+		["buttontext"] = "Set",
+		["value"] = math.floor(game.Lighting.FogStart),
+		["Numeric"] = "true",
+		["func"] = function(var)
+			game.Lighting.FogStart = tonumber(var);
+		end
+	},
+	{
+		["name"] = "Time Of Day",
+		["type"] = "TextButton",
+		["buttontext"] = "Set",
+		["value"] = "14",
+		["Numeric"] = "true",
+		["func"] = function(var)
+			game.Lighting.TimeOfDay = tostring(tonumber(var)) .. ":00:00";
+		end
+	}
+)
+
+local aPageHolder1--fix an annoying warning
+--Settings Tab
+local FSettings = {}
+AddCommands(FSettings,
+	{
+		["name"] = "FeDetector",
+		["type"] = "TextLabel",
+		["text"] = ("  FilteringEnabled: "..tostring(Workspace.FilteringEnabled)),
+	},
+	{
+		["name"] = "Notifications",
+		["type"] = "Toggle",
+		["ToggleValue"] = Settings.Notifications,
+		["func1"] = function()
+			Settings.Notifications = false;
+		end,
+		["func2"] = function()
+			Settings.Notifications = true;
+		end
+	},
+	{
+		["name"] = "AutoBan Loop",
+		["type"] = "Toggle",
+		["ToggleValue"] = Settings.BanEnabled,
+		["func1"] = function()
+			Settings.BanEnabled = false;
+		end,
+		["func2"] = function()
+			Settings.BanEnabled = true;
+		end
+	},
+	{
+		["name"] = "AutoBan Owner",
+		["type"] = "Toggle",
+		["ToggleValue"] = Settings.BanOwner,
+		["func1"] = function()
+			Settings.BanOwner = false;
+		end,
+		["func2"] = function()
+			Settings.BanOwner = true;
+		end
+	},
+	{
+		["name"] = "PrivateServer",
+		["type"] = "Toggle",
+		["ToggleValue"] = Settings.PrivateServer,
+		["func1"] = function()
+			Settings.PrivateServer = false;
+		end,
+		["func2"] = function()
+			Settings.PrivateServer = true;
+		end
+	},
+	{
+		["name"] = "ChatBubble Type",
+		["type"] = "DropDown",
+		["FirstChoice"] = Settings.ChatBubble,
+		["Choices"] = {
+			["Blue"]=function()
+				ChatBubbleType = Enum.ChatColor.Blue;
+				Settings.ChatBubble = "Blue"
+			end,
+			["Green"]=function()
+				ChatBubbleType = Enum.ChatColor.Green;
+				Settings.ChatBubble = "Green"
+			end,
+			["Red"]=function()
+				ChatBubbleType = Enum.ChatColor.Red;
+				Settings.ChatBubble = "Red"
+			end
+		}
+	},
+	{
+		["name"] = "Main Color",
+		["type"] = "ColorPicker",
+		["RGB"] = LightBlue,
+		["func"] = function(color)
+			LightBlue = color;
+			resetColor(ObjColorTable1,LightBlue)
+		end
+	},
+	{
+		["name"] = "Second Color",
+		["type"] = "ColorPicker",
+		["RGB"] = DarkBlue,
+		["func"] = function(color)
+			DarkBlue = color;
+			resetColor(ObjColorTable2,DarkBlue)
+		end
+	},
+	{
+		["name"] = "Border & Font Color",
+		["type"] = "ColorPicker",
+		["RGB"] = White,
+		["func"] = function(color)
+			White = color;
+			resetFontColor(White)
+			resetColorBorder(White)
+		end
+	},
+	{
+		["name"] = "NoClip Use Hotkey",
+		["type"] = "Toggle",
+		["ToggleValue"] = NoClipUseHotkey,
+		["func1"] = function()
+			NoClipUseHotkey = false;
+		end,
+		["func2"] = function()
+			NoClipUseHotkey = true;
+		end
+	},
+	{
+		["name"] = "NoClip Toggle Hotkey",
+		["type"] = "KeySelect",
+		["value"] = NoClipToggleKey,
+		--[[["FirstChoice"] = "Up",
+		
+		["Choices"] = {
+			["Up"]=function() NoClipToggleKey = Enum.KeyCode.Up; end,
+			["Down"]=function() NoClipToggleKey = Enum.KeyCode.Down; end,
+			["Left"]=function() NoClipToggleKey = Enum.KeyCode.Left; end,
+			["Left Alt"]=function() NoClipToggleKey = Enum.KeyCode.LeftAlt; end,
+			["Right Alt"]=function() NoClipToggleKey = Enum.KeyCode.RightAlt; end,
+			["Left Control"]=function() NoClipToggleKey = Enum.KeyCode.LeftControl; end,
+			["Right Control"]=function() NoClipToggleKey = Enum.KeyCode.RightControl; end,
+			["N Key"]=function() NoClipToggleKey = Enum.KeyCode.N; end,
+			["Right"]=function() NoClipToggleKey = Enum.KeyCode.Right; end
+		}]]
+	},
+	{
+		["name"] = "XRay Use Hotkey",
+		["type"] = "Toggle",
+		["ToggleValue"] = XRayUseHotkey,
+		["func1"] = function()
+			XRayUseHotkey = false;
+		end,
+		["func2"] = function()
+			XRayUseHotkey = true;
+		end
+	},
+	{
+		["name"] = "XRay Toggle Hotkey",
+		["type"] = "KeySelect",
+		["value"] = XRayToggleKey,
+	},
+	{
+		["name"] = "Teleport Toggle Hotkey",
+		["type"] = "KeySelect",
+		["value"] = TeleportToggleKey,
+	},
+	{
+		["name"] = "See Banned Players",
+		["type"] = "ButtonSingle",
+		["func"] = function()
+			local PageName = "BannedPlayers"
+			local Page = aPageHolder1:FindFirstChild(PageName)
+			if Page ~= nil then
+				for i,v in pairs(aPageHolder1:GetChildren()) do
+					if v.Name ~= PageName then
+						v:TweenPosition(UDim2.new(1,0,0,0),"Out","Quad",0.25,true);
+						v.Visible = false;
+					else
+						v.Visible = true;
+						v:TweenPosition(UDim2.new(0,0,0,0),"Out","Quad",0.25,true);
+					end
+				end
+				RefreshButtonTab("NewTab");
+			end
+		end
+	}
+	--[[,
+	{
+		["name"] = "Import Settings",
+		["type"] = "TextButton",
+		["buttontext"] = "Set",
+		["value"] = "",
+		["func"] = function(var)
+			UnpackSettings(var)
+			UnpackColors(E.EColors) -- above line to load new settings
+
+			Settings = {
+				BanEnabled = E["ESettings"]["sBanEnabled"];
+				BanOwner = E["ESettings"]["sBanOwner"];
+				PrivateServer = E["ESettings"]["sPrivateServer"];
+				Notifications = E["ESettings"]["sNotifications"];
+				ChatBubble = E["ESettings"]["sChatBubble"];
+			}
+
+			resetColor(ObjColorTable1,LightBlue)
+			resetColor(ObjColorTable2,DarkBlue)
+			resetFontColor(White)
+			resetColorBorder(White)
+		end
+	}]]
+)
+
+-- ESP Tab
+local EFunctions = {}
+AddCommands(EFunctions,
+	{
+		["name"] = "Enable ESP",
+		["type"] = "Toggle",
+		["ToggleValue"] = EnableEsp,
+		["func1"] = function()
+			EnableEsp = false;
+		end,
+		["func2"] = function()
+			EnableEsp = true;
+		end
+	},
+	{
+		["name"] = "CrossHair",
+		["type"] = "Toggle",
+		["ToggleValue"] = CrossHair,
+		["func1"] = function()
+			CrossHair = false;
+		end,
+		["func2"] = function()
+			CrossHair = true;
+		end
+	},
+	{
+		["name"] = "ESP Box",
+		["type"] = "Toggle",
+		["ToggleValue"] = EspBox,
+		["func1"] = function()
+			EspBox = false;
+		end,
+		["func2"] = function()
+			EspBox = true;
+		end
+	},
+	{
+		["name"] = "ESP Line",
+		["type"] = "Toggle",
+		["ToggleValue"] = LineEsp,
+		["func1"] = function()
+			LineEsp = false;
+		end,
+		["func2"] = function()
+			LineEsp = true;
+		end
+	},
+	{
+		["name"] = "ESP Health Bar",
+		["type"] = "Toggle",
+		["ToggleValue"] = HealthEsp,
+		["func1"] = function()
+			HealthEsp = false;
+		end,
+		["func2"] = function()
+			HealthEsp = true;
+		end
+	},
+	{
+		["name"] = "ESP Name Tag",
+		["type"] = "Toggle",
+		["ToggleValue"] = NameEsp,
+		["func1"] = function()
+			NameEsp = false;
+		end,
+		["func2"] = function()
+			NameEsp = true;
+		end
+	},
+	{
+		["name"] = "ESP Distance",
+		["type"] = "Toggle",
+		["ToggleValue"] = uDrawDistance,
+		["func1"] = function()
+			uDrawDistance = false;
+		end,
+		["func2"] = function()
+			uDrawDistance = true;
+		end
+	},
+	{
+		["name"] = "ESP Behind Warning",
+		["type"] = "Toggle",
+		["ToggleValue"] = BehindWarning,
+		["func1"] = function()
+			BehindWarning = false;
+		end,
+		["func2"] = function()
+			BehindWarning = true;
+		end
+	},
+	{
+		["name"] = "Use Team Color",
+		["type"] = "Toggle",
+		["ToggleValue"] = UseTeamColor,
+		["func1"] = function()
+			UseTeamColor = false;
+		end,
+		["func2"] = function()
+			UseTeamColor = true;
+		end
+	},
+	{
+		["name"] = "ESP Color",
+		["type"] = "ColorPicker",
+		["RGB"] = EspBoxColor,
+		["func"] = function(color)
+			EspBoxColor = color;
+		end
+	},
+	{
+		["name"] = "CrossHair Color",
+		["type"] = "ColorPicker",
+		["RGB"] = CrossHairColor,
+		["func"] = function(color)
+			CrossHairColor = color;
+		end
+	},
+	{
+		["name"] = "Line ESP Origin",
+		["type"] = "DropDown",
+		["FirstChoice"] = "Bottom",
+		["Choices"] = {
+			["Bottom"]=function() CenterOfScreen = false; TopOfScreen = false; end,
+			["Center"]=function() CenterOfScreen = true; TopOfScreen = false; end,
+			["Top"]=function() CenterOfScreen = false; TopOfScreen = true; end
+		}
+	},
+	{
+		["name"] = "ESP Team",
+		["type"] = "DropDown",
+		["FirstChoice"] = "All",
+		["Choices"] = {
+			["All"]=function() EspEnemyTeam = true; EspMyTeam = true; end,
+			["Enemy"]=function() EspEnemyTeam = true; EspMyTeam = false; end,
+			["Ally"]=function() EspEnemyTeam = false; EspMyTeam = true; end
+		}
+	},
+	{
+		["name"] = "ESP MySelf",
+		["type"] = "Toggle",
+		["ToggleValue"] = EspMe,
+		["func1"] = function()
+			EspMe = false;
+		end,
+		["func2"] = function()
+			EspMe = true;
+		end
+	}
+)
+
+--Local Commands Tab
+local LFunctions = {}
+AddCommands(LFunctions,
+	{
+		["name"] = "No Clipping",
+		["type"] = "Toggle",
+		["ToggleValue"] = NoClip,
+		["func1"] = function()
+			NoClip.Value = false;
+		end,
+		["func2"] = function()
+			NoClip.Value = true;
+		end
+	},
+	{
+		["name"] = "X Ray",
+		["type"] = "Toggle",
+		["ToggleValue"] = XRay,
+		["func1"] = function()
+			XRay.Value = false;
+		end,
+		["func2"] = function()
+			XRay.Value = true;
+		end
+	},
+	{
+		["name"] = "Teleport To Mouse (On Hotkey)",
+		["type"] = "Toggle",
+		["ToggleValue"] = Teleport,
+		["func1"] = function()
+			Teleport.Value = false;
+		end,
+		["func2"] = function()
+			Teleport.Value = true;
+		end
+	}
+)
+
+--Server Destruction Tab
+local SDFunctions = {}
+AddCommands(SDFunctions,
+	{
+		["name"] = "Flood",
+		["type"] = "ButtonSingle",
+		["func"] = function()
+			workspace.Terrain:SetCells(Region3int16.new(Vector3int16.new(-100,-100,-100), Vector3int16.new(100,100,100)), 17, "Solid", "X")
+		end
+	},
+	{
+		["name"] = "Clear Terrain",
+		["type"] = "ButtonSingle",
+		["func"] = function()
+			workspace.Terrain:Clear()
+		end
+	},
+	{
+		["name"] = "Clear Workspace",
+		["type"] = "ButtonSingle",
+		["func"] = function()
+			workspace:ClearAllChildren()
+		end
+	},
+	{
+		["name"] = "Color Spam",
+		["type"] = "ButtonSingle",
+		["func"] = function()
+			ExeOnAllKind(Workspace,"BasePart",function(part) part.BrickColor = BrickColor.Random() end)
+		end
+	},
+	{
+		["name"] = "Anchore Workspace",
+		["type"] = "ButtonDouble",
+		["button1text"] = "On",
+		["button2text"] = "Off",
+		["func1"] = function()
+			ExeOnAllKind(Workspace,"BasePart",function(part) part.Anchored = true; end)
+		end,
+		["func2"] = function()
+			ExeOnAllKind(Workspace,"BasePart",function(part) part.Anchored = false; end)
+		end
+	},
+	{
+		["name"] = "Create BasePlate",
+		["type"] = "ButtonSingle",
+		["func"] = function()
+			local pt = Instance.new("Part")
+			pt.BrickColor = BrickColor.new("Bright green")
+			pt.Anchored = true
+			pt.CanCollide = true
+			pt.BottomSurface = 0
+			pt.TopSurface = 0
+			pt.Name = (math.random(1,1000000))
+			pt.Size = Vector3.new(1000, 1, 1000)
+			pt.Parent = workspace
+		end
+	},
+	{
+		["name"] = "Rain Taco",
+		["type"] = "Toggle",
+		["ToggleValue"] = RainTaco,
+		["func1"] = function()
+			RainTaco = false;
+		end,
+		["func2"] = function()
+			RainTaco = true;
+		end
+	},
+	{
+		["name"] = "Shutdown",
+		["type"] = "ButtonSingle",
+		["func"] = function()
+			for i=1, 100 do
+				for i,v in pairs(Players:GetChildren()) do
+					v:Destroy()
+				end
+			end
+		end
+	}
+)
+
+--RoXploit
+local RoXploit = Instance.new("ScreenGui", gParent);
+RoXploit.Name = "RoXploit";
+RoXploit.DisplayOrder = 999;
+RoXploit.ResetOnSpawn = false;
+
+local ESP = Instance.new("ScreenGui", gParent);
+ESP.Name = "ESP";
+ESP.DisplayOrder = 998;
+ESP.IgnoreGuiInset = true;
+ESP.ResetOnSpawn = false;
+
+local FullScreen = Instance.new("Frame",ESP);
+FullScreen.Size = UDim2.new(1,0,1,0)
+FullScreen.Transparency = 1
+
+local OpenCloseButton = Instance.new("TextButton",RoXploit);
+OpenCloseButton.FontSize = Enum.FontSize.Size14;
+OpenCloseButton.ZIndex = 10;
+OpenCloseButton.BackgroundColor3 = DarkBlue;
+OpenCloseButton.BorderColor3 = White;
+OpenCloseButton.TextColor3 = White;
+OpenCloseButton.Text = "OPEN";
+OpenCloseButton.Font = Enum.Font.Arial;
+OpenCloseButton.FontSize = Enum.FontSize.Size10;
+OpenCloseButton.Position = UDim2.new(1, -5, 1, -5);
+OpenCloseButton.Size = UDim2.new(0, -40, 0, -40);
+
+local aFrame0 = Instance.new("Frame",RoXploit);
+aFrame0.Active = true;
+aFrame0.Draggable = true;
+aFrame0.BackgroundColor3 = DarkBlue;
+aFrame0.Size = UDim2.new(0, 520, 0, 355);
+aFrame0.BorderColor3 = White;
+aFrame0.Position = UDim2.new(0.5, -260, 2, -175);
+
+local Close = Instance.new("TextButton",aFrame0);
+Close.FontSize = Enum.FontSize.Size10;
+Close.TextColor3 = White;
+Close.TextXAlignment = Enum.TextXAlignment.Right;
+Close.TextYAlignment = Enum.TextYAlignment.Top;
+Close.Size = UDim2.new(0, -12, 0, 12);
+Close.TextColor3 = White;
+Close.Text = "X";
+Close.Font = Enum.Font.ArialBold;
+Close.FontSize = Enum.FontSize.Size12;
+Close.BackgroundTransparency = 1;
+Close.Position = UDim2.new(1, -2, 0, 2);
+Close.Name = "CloseButton";
+
+aPageHolder1 = Instance.new("Frame",aFrame0);
+aPageHolder1.BorderSizePixel = 0;
+aPageHolder1.BackgroundColor3 = LightBlue;
+aPageHolder1.ClipsDescendants = true;
+aPageHolder1.Size = UDim2.new(0, 380, 0, 325);
+aPageHolder1.BorderColor3 = White;
+aPageHolder1.Position = UDim2.new(0, 140, 0, 30);
+aPageHolder1.Name = "PageHolder";
+
+local aTabHolder14 = Instance.new("Frame",aFrame0);
+aTabHolder14.BorderSizePixel = 0;
+aTabHolder14.BackgroundColor3 = LightBlue;
+aTabHolder14.Size = UDim2.new(0, 140, 0, 325);
+aTabHolder14.BorderColor3 = White;
+aTabHolder14.BackgroundTransparency = 0.75;
+aTabHolder14.Position = UDim2.new(0, 0, 0, 30);
+aTabHolder14.Name = "TabHolder";
+
+local aSettings15 = Instance.new("TextButton",aTabHolder14);
+aSettings15.FontSize = Enum.FontSize.Size14;
+aSettings15.ZIndex = 2;
+aSettings15.BorderSizePixel = 0;
+aSettings15.BackgroundColor3 = LightBlue;
+aSettings15.Size = UDim2.new(1, 0, 0, 35);
+aSettings15.TextColor3 = White;
+aSettings15.Text = "Settings";
+aSettings15.Font = Enum.Font.ArialBold;
+aSettings15.Transparency = 0.5;
+aSettings15.Position = UDim2.new(0, 0, 0, 285);
+aSettings15.Name = "Settings";
+
+local aPselection16 = Instance.new("TextButton",aTabHolder14);
+aPselection16.FontSize = Enum.FontSize.Size14;
+aPselection16.ZIndex = 2;
+aPselection16.BorderSizePixel = 0;
+aPselection16.BackgroundColor3 = LightBlue;
+aPselection16.Size = UDim2.new(1, 0, 0, 35);
+aPselection16.TextColor3 = White;
+aPselection16.Text = "Player Selection";
+aPselection16.Font = Enum.Font.ArialBold;
+aPselection16.Transparency = 0.5;
+aPselection16.Position = UDim2.new(0, 0, 0, 245);
+aPselection16.Name = "Player Selection";
+
+local aTabPageHolder17 = Instance.new("Frame",aTabHolder14);
+aTabPageHolder17.BorderSizePixel = 0;
+aTabPageHolder17.BackgroundColor3 = LightBlue;
+aTabPageHolder17.Size = UDim2.new(0, 140, 0, 240);
+aTabPageHolder17.BorderColor3 = White;
+aTabPageHolder17.BackgroundTransparency = 1;
+aTabPageHolder17.Name = "TabPageHolder";
+aTabPageHolder17.ClipsDescendants = true;
+--[[
+local aLeftArrow22 = Instance.new("TextButton",aTabHolder14);
+aLeftArrow22.FontSize = Enum.FontSize.Size14;
+aLeftArrow22.ZIndex = 2;
+aLeftArrow22.BorderSizePixel = 0;
+aLeftArrow22.BackgroundColor3 = LightBlue;
+aLeftArrow22.Size = UDim2.new(0, 20, 0, 20);
+aLeftArrow22.TextColor3 = White;
+aLeftArrow22.Text = "<";
+aLeftArrow22.Font = Enum.Font.ArialBold;
+aLeftArrow22.BackgroundTransparency = 0;
+aLeftArrow22.Position = UDim2.new(0, 0, 0, 210);
+aLeftArrow22.Name = "LeftArrow";
+
+local aRightArrow23 = Instance.new("TextButton",aTabHolder14);
+aRightArrow23.FontSize = Enum.FontSize.Size14;
+aRightArrow23.ZIndex = 2;
+aRightArrow23.BorderSizePixel = 0;
+aRightArrow23.BackgroundColor3 = LightBlue;
+aRightArrow23.Size = UDim2.new(0, 20, 0, 20);
+aRightArrow23.TextColor3 = White;
+aRightArrow23.Text = ">";
+aRightArrow23.Font = Enum.Font.ArialBold;
+aRightArrow23.BackgroundTransparency = 0;
+aRightArrow23.Position = UDim2.new(0, 120, 0, 210);
+aRightArrow23.Name = "RightArrow";
+
+local aTabPageButtonHolder24 = Instance.new("Frame",aTabHolder14);
+aTabPageButtonHolder24.BorderSizePixel = 0;
+aTabPageButtonHolder24.BackgroundColor3 = LightBlue;
+aTabPageButtonHolder24.ClipsDescendants = true;
+aTabPageButtonHolder24.Size = UDim2.new(0, 100, 0, 20);
+aTabPageButtonHolder24.BorderColor3 = White;
+aTabPageButtonHolder24.BackgroundTransparency = 1;
+aTabPageButtonHolder24.Position = UDim2.new(0, 20, 0, 210);
+aTabPageButtonHolder24.Name = "TabPageButtonHolder";
+]]
+local aTitle30 = Instance.new("TextLabel",aFrame0);
+aTitle30.FontSize = Enum.FontSize.Size14;
+aTitle30.BackgroundColor3 = White;
+aTitle30.TextXAlignment = Enum.TextXAlignment.Left;
+aTitle30.Size = UDim2.new(1, -10, 0, 30);
+aTitle30.TextColor3 = White;
+aTitle30.Text = "RO-XPLOIT tinyhub";
+aTitle30.Font = Enum.Font.ArialBold;
+aTitle30.BackgroundTransparency = 1;
+aTitle30.Position = UDim2.new(0, 10, 0, 0);
+aTitle30.Name = "Title";
+
+local aVersion31 = Instance.new("TextLabel",aFrame0);
+aVersion31.FontSize = Enum.FontSize.Size10;
+aVersion31.BackgroundColor3 = White;
+aVersion31.TextXAlignment = Enum.TextXAlignment.Right;
+aVersion31.TextYAlignment = Enum.TextYAlignment.Top;
+aVersion31.Size = UDim2.new(1, -3, 0, 28);
+aVersion31.TextColor3 = White;
+aVersion31.Text = "V6.5.0.0";
+aVersion31.Font = Enum.Font.ArialBold;
+aVersion31.BackgroundTransparency = 1;
+aVersion31.Position = UDim2.new(0, 0, 0, 18);
+aVersion31.Name = "Version";
+--[[
+local aImageLabel32 = Instance.new("ImageLabel",RoXploit);
+aImageLabel32.BackgroundColor3 = White;
+aImageLabel32.Image = "rbxassetid://278201073";
+aImageLabel32.Size = UDim2.new(0, 100, 0, 100);
+aImageLabel32.Rotation = -20;
+aImageLabel32.BackgroundTransparency = 1;
+aImageLabel32.Position = UDim2.new(0, -10, 1, 0);
+
+spawn(function()
+	aImageLabel32:TweenPosition(UDim2.new(0, -10, 1, -70), Enum.EasingDirection.Out, Enum.EasingStyle.Linear, 3, true)
+	wait(5)
+	aImageLabel32:TweenPosition(UDim2.new(0, -10, 1, 0), Enum.EasingDirection.Out, Enum.EasingStyle.Linear, 2, true)
+	wait(2)
+	aImageLabel32.Visible = false
+end)
+]]
+function ExeOnAllKind(location, kind, action)
+	for _,v in pairs(location:GetChildren()) do
+		if (v:IsA(kind)) then
+			pcall(function() action(v) end)
+		end
+		ExeOnAllKind(v, kind, action)
+	end
+end
+
+function StartToEnd(Obj,Start,End,Speed,Func)
+	spawn(function()
+		for i=Start,End,Speed do
+			Func(Obj,i)
+			wait()
+		end
+	end)
+end
+
+function Find(Txt,Wanted)
+	return string.find(Txt,Wanted)
+end
+
+function Match(Txt,Wanted)
+	return string.match(Txt,Wanted)
+end
+
+function SetHotkey(Key,Function)--Enum.KeyCode
+	UserInput.InputBegan:connect(function(key, chatting)
+		if not chatting then
+			if key.KeyCode == Key then
+				pcall(function() Function() end)
+			end
+		end
+	end)
+end
+
+
+function SetCharacterScale(chr,scl)
+	pcall(function()
+		local hd=chr['Head'];
+		local to=chr['Torso'];
+		local la=chr['Left Arm'];
+		local ra=chr['Right Arm'];
+		local ll=chr['Left Leg'];
+		local rl=chr['Right Leg'];
+		local hp=chr['HumanoidRootPart'];
+		hd.Size=Vector3.new(scl*2,scl,scl);
+		to.Size=Vector3.new(scl*2,scl*2,scl);
+		la.Size=Vector3.new(scl,scl*2,scl);
+		ra.Size=Vector3.new(scl,scl*2,scl);
+		ll.Size=Vector3.new(scl,scl*2,scl);
+		rl.Size=Vector3.new(scl,scl*2,scl);
+		hp.Size=Vector3.new(scl*2,scl*2,scl);
+		local m1=Instance.new('Motor6D',to);
+		m1.Part0=to;
+		m1.Part1=hd;
+		m1.C0=CFrame.new(0,1*scl,0)*CFrame.Angles(-1.6,0,3.1);
+		m1.C1=CFrame.new(0,-0.5*scl,0)*CFrame.Angles(-1.6,0,3.1);
+		local m2=Instance.new('Motor6D',to);
+		m2.Part0=to;
+		m2.Part1=la;
+		m2.C0=CFrame.new(-1*scl,0.5*scl,0)*CFrame.Angles(0,-1.6,0);
+		m2.C1=CFrame.new(0.5*scl,0.5*scl,0)*CFrame.Angles(0,-1.6,0);
+		local m3=Instance.new('Motor6D',to);
+		m3.Part0=to;
+		m3.Part1=ra;
+		m3.C0=CFrame.new(1*scl,0.5*scl,0)*CFrame.Angles(0,1.6,0);
+		m3.C1=CFrame.new(-0.5*scl,0.5*scl,0)*CFrame.Angles(0,1.6,0);
+		local m4=Instance.new('Motor6D',to);
+		m4.Part0=to;
+		m4.Part1=ll;
+		m4.C0=CFrame.new(-1*scl,-1*scl,0)*CFrame.Angles(0,-1.6,0);
+		m4.C1=CFrame.new(-0.5*scl,1*scl,0)*CFrame.Angles(0,-1.6,0);
+		local m5=Instance.new('Motor6D',to);
+		m5.Part0=to;
+		m5.Part1=rl;
+		m5.C0=CFrame.new(1*scl,-1*scl,0)*CFrame.Angles(0,1.6,0);
+		m5.C1=CFrame.new(0.5*scl,1*scl,0)*CFrame.Angles(0,1.6,0);
+		local m6=Instance.new('Motor6D',hp);
+		m6.Part0=hp;
+		m6.Part1=to;
+		m6.C0=CFrame.new(0,0,0)*CFrame.Angles(-1.6,0,-3.1);
+		m6.C1=CFrame.new(0,0,0)*CFrame.Angles(-1.6,0,-3.1);
+	end)
+end
+
+
+function EmptyPage(Name)
+	local EmptyPage = Instance.new("Frame",aPageHolder1);
+	EmptyPage.BorderSizePixel = 0;
+	EmptyPage.BackgroundColor3 = LightBlue;
+	EmptyPage.Size = UDim2.new(1, 0, 1, 0);
+	EmptyPage.BorderColor3 = White;
+	EmptyPage.Name = Name;
+	return EmptyPage;
+end
+
+function Clear(f)
+	for i,v in pairs(f:GetChildren()) do
+		v:Remove();
+	end
+end
+
+function IfPlayerSelected(name,f)
+	if f:FindFirstChild(name) ~= nil then
+		return true;
+	else 
+		return false;
+	end
+end
+
+function CreateSelectedPlayer(name,f)
+	local pl = Instance.new("BoolValue");
+	pl.Name = name;
+	pl.Parent = f;
+	return pl;
+end
+
+function TogglePlayerSelection(name,f)
+	if IfPlayerSelected(name,f) then
+		if f:FindFirstChild(name) ~= nil then
+			f:FindFirstChild(name):Remove();
+		end
+	else
+		if f:FindFirstChild(name) == nil then
+			CreateSelectedPlayer(name,f);
+		end
+	end
+end
+
+function GetAge(name)
+	if Players ~= nil then
+		if Players:FindFirstChild(name) ~= nil then
+			if Players:FindFirstChild(name):IsA("Player") then
+				return Players:FindFirstChild(name).AccountAge;
+			end
+			return 0;
+		end
+		return 0;
+	end
+	return 0;
+end
+
+function GetId(name)
+	if Players ~= nil then
+		if Players:FindFirstChild(name) ~= nil then
+			if Players:FindFirstChild(name):IsA("Player") then
+				return Players:FindFirstChild(name).UserId;
+			end
+			return 0;
+		end
+		return 0;
+	end
+	return 0;
+end
+
+function GetMemberShip(name)
+	if Players ~= nil then
+		if Players:FindFirstChild(name) ~= nil then
+			if Players:FindFirstChild(name):IsA("Player") then
+				local pl = Players:FindFirstChild(name);
+				if pl.MembershipType == Enum.MembershipType.None then
+					return "FREE";
+				elseif pl.MembershipType == Enum.MembershipType.Premium then
+					return "PREMIUM";
+				elseif pl.MembershipType == Enum.MembershipType.BuildersClub then
+					return "BC";
+				elseif pl.MembershipType == Enum.MembershipType.TurboBuildersClub then
+					return "TBC";
+				elseif pl.MembershipType == Enum.MembershipType.OutrageousBuildersClub then
+					return "OBC";
+				end
+			end
+			return "NBC";
+		end
+		return "NBC";
+	end
+	return "NBC";
+end
+
+function GetPlayer(name)
+	if Players:FindFirstChild(name) ~= nil then
+		return Players:FindFirstChild(name);
+	else
+		return nil;
+	end
+end
+
+function GetSelected()
+	local result = {};
+	for i,v in pairs(Selected:GetChildren()) do
+		local pl = GetPlayer(v.Name);
+		if pl ~= nil then
+			table.insert(result,pl);
+		end
+	end
+	return result;
+end
+
+function RunOnSelected(func)
+	pcall(function()
+		local pl = GetSelected();
+		for i=1,#pl,1 do
+			pcall(function() func(pl[i]); end)
+		end
+	end)
+end
+
+function RefreshPData()
+	for i,v in pairs(Selected:GetChildren()) do
+		if Players:FindFirstChild(v.Name) == nil then
+			v:Remove()
+		end
+	end
+	for i,v in pairs(Favorite:GetChildren()) do
+		if Players:FindFirstChild(v.Name) == nil then
+			v:Remove()
+		end
+	end
+	RefreshPlayerList(plastsearch)
+end
+
+
+Selected.ChildAdded:connect(function()
+	RefreshPlayerList(plastsearch)
+end)
+
+Selected.ChildRemoved:connect(function()
+	RefreshPlayerList(plastsearch)
+end)
+
+Players.ChildAdded:connect(function(c)
+	RefreshPlayerList(plastsearch)
+	if c:IsA("Player") then
+		if c.FollowUserId == LocalPlayer.UserId then
+			TinyHubNotification(c.Name,"Followed you.","http://www.roblox.com/Thumbs/Avatar.ashx?x=150&y=150&Format=Png&username="..c.Name,1.5)
+		else
+			TinyHubNotification(c.Name,"Joined the game.","http://www.roblox.com/Thumbs/Avatar.ashx?x=150&y=150&Format=Png&username="..c.Name,1.5)
+		end
+	end
+	if Settings.PrivateServer == true then
+		c:Destroy();
+	end
+end)
+
+Players.ChildRemoved:connect(function(c)
+	RefreshPData()
+	RefreshPlayerList(plastsearch)
+	if c:IsA("Player") then
+		TinyHubNotification(c.Name,"Left the game.","http://www.roblox.com/Thumbs/Avatar.ashx?x=150&y=150&Format=Png&username="..c.Name,1.5)
+	end
+end)
+
+local Open = false
+function openandclose()
+	if Open == false then
+		OpenCloseButton:TweenPosition(UDim2.new(1, 50, 1, 50),"Out","Quad",0.5,true)
+		aFrame0:TweenPosition(UDim2.new(0.5, -260, 0.5, -175),"Out","Quad",1,true)
+		Open = true;
+	else
+		OpenCloseButton:TweenPosition(UDim2.new(1, -5, 1, -5),"Out","Quad",0.5,true)
+		aFrame0:TweenPosition(UDim2.new(0.5, -260, 2, -175),"Out","Quad",1,true)
+		Open = false;
+	end
+end
+
+OpenCloseButton.MouseButton1Click:connect(function()
+	openandclose()
+end)
+
+Close.MouseButton1Click:connect(function()
+	openandclose()
+end)
+
+SetHotkey(Enum.KeyCode.Semicolon,function() openandclose() end)
+
+function fTeleport(p,v)
+	if p ~= v then
+		if p.Character ~= nil then
+			if v.Character ~= nil then
+				if v.Character:FindFirstChild("Torso") ~= nil then
+					p.Character:MoveTo(v.Character:FindFirstChild("Torso").Position)
+				end
+				if p.Character:FindFirstChild("HumanoidRootPart") ~= nil then
+					local Root1 = p.Character:FindFirstChild("HumanoidRootPart")
+					if v.Character:FindFirstChild("HumanoidRootPart") ~= nil then
+						local Root2 = v.Character:FindFirstChild("HumanoidRootPart")
+						Root1.CFrame = Root2.CFrame
+					end
+				end
+			end
+		end
+	end
+end
+
+local aScrollingFrame11
+function ColorPicker(p)
+	local aRGBHolder2 = Instance.new("Frame",p);
+	aRGBHolder2.BackgroundColor3 = White;
+	aRGBHolder2.Size = UDim2.new(0, 110, 0, 110);
+	aRGBHolder2.BackgroundTransparency = 1;
+	aRGBHolder2.Position = UDim2.new(1, -130, 0, 0);
+	aRGBHolder2.Name = "RGBHolder";
+	aRGBHolder2.Visible = false;
+
+	local aFrame3 = Instance.new("Frame",aRGBHolder2);
+	aFrame3.ZIndex = 6;
+	aFrame3.BackgroundColor3 = LightBlue;
+	aFrame3.Size = UDim2.new(0, 30, 0, 32);
+	aFrame3.BorderColor3 = White;
+	aFrame3.Position = UDim2.new(1, -30, 0, 0);
+
+	local aFrame4 = Instance.new("Frame",aFrame3);
+	aFrame4.ZIndex = 6;
+	aFrame4.BackgroundColor3 = LightBlue;
+	aFrame4.Size = UDim2.new(0, 100, 0, 80);
+	aFrame4.BorderColor3 = White;
+	aFrame4.Position = UDim2.new(0, -70, 0, 31);
+
+	local aFrame5 = Instance.new("Frame",aFrame4);
+	aFrame5.ZIndex = 7;
+	aFrame5.BorderSizePixel = 0;
+	aFrame5.BackgroundColor3 = LightBlue;
+	aFrame5.Size = UDim2.new(0, 30, 0, 1);
+	aFrame5.BorderColor3 = White;
+	aFrame5.Position = UDim2.new(0, 70, 0, -1);
+
+	local aRBox6 = Instance.new("TextBox",aFrame4);
+	aRBox6.FontSize = Enum.FontSize.Size14;
+	aRBox6.ZIndex = 7;
+	aRBox6.BackgroundColor3 = DarkBlue;
+	aRBox6.ClipsDescendants = true;
+	aRBox6.Size = UDim2.new(1, -25, 0, 20);
+	aRBox6.TextColor3 = White;
+	aRBox6.BorderColor3 = White;
+	aRBox6.Text = "50";
+	aRBox6.Font = Enum.Font.Arial;
+	aRBox6.Position = UDim2.new(0, 20, 0, 5);
+	aRBox6.Name = "RBox";
+
+	local aGBox7 = Instance.new("TextBox",aFrame4);
+	aGBox7.FontSize = Enum.FontSize.Size14;
+	aGBox7.ZIndex = 7;
+	aGBox7.BackgroundColor3 = DarkBlue;
+	aGBox7.ClipsDescendants = true;
+	aGBox7.Size = UDim2.new(1, -25, 0, 20);
+	aGBox7.TextColor3 = White;
+	aGBox7.BorderColor3 = White;
+	aGBox7.Text = "145";
+	aGBox7.Font = Enum.Font.Arial;
+	aGBox7.Position = UDim2.new(0, 20, 0, 30);
+	aGBox7.Name = "GBox";
+
+	local aBBox8 = Instance.new("TextBox",aFrame4);
+	aBBox8.FontSize = Enum.FontSize.Size14;
+	aBBox8.ZIndex = 7;
+	aBBox8.BackgroundColor3 = DarkBlue;
+	aBBox8.ClipsDescendants = true;
+	aBBox8.Size = UDim2.new(1, -25, 0, 20);
+	aBBox8.TextColor3 = White;
+	aBBox8.BorderColor3 = White;
+	aBBox8.Text = "126";
+	aBBox8.Font = Enum.Font.Arial;
+	aBBox8.Position = UDim2.new(0, 20, 0, 55);
+	aBBox8.Name = "BBox";
+
+	local aLabel9 = Instance.new("TextLabel",aFrame4);
+	aLabel9.FontSize = Enum.FontSize.Size14;
+	aLabel9.ZIndex = 7;
+	aLabel9.BackgroundColor3 = White;
+	aLabel9.Size = UDim2.new(0, 10, 0, 20);
+	aLabel9.TextColor3 = White;
+	aLabel9.Text = "R:";
+	aLabel9.Font = Enum.Font.ArialBold;
+	aLabel9.BackgroundTransparency = 1;
+	aLabel9.Position = UDim2.new(0, 5, 0, 5);
+	aLabel9.Name = "Label";
+
+	local aLabel10 = Instance.new("TextLabel",aFrame4);
+	aLabel10.FontSize = Enum.FontSize.Size14;
+	aLabel10.ZIndex = 7;
+	aLabel10.BackgroundColor3 = White;
+	aLabel10.Size = UDim2.new(0, 10, 0, 20);
+	aLabel10.TextColor3 = White;
+	aLabel10.Text = "G:";
+	aLabel10.Font = Enum.Font.ArialBold;
+	aLabel10.BackgroundTransparency = 1;
+	aLabel10.Position = UDim2.new(0, 5, 0, 30);
+	aLabel10.Name = "Label";
+
+	local aLabel11 = Instance.new("TextLabel",aFrame4);
+	aLabel11.FontSize = Enum.FontSize.Size14;
+	aLabel11.ZIndex = 7;
+	aLabel11.BackgroundColor3 = White;
+	aLabel11.Size = UDim2.new(0, 10, 0, 20);
+	aLabel11.TextColor3 = White;
+	aLabel11.Text = "B:";
+	aLabel11.Font = Enum.Font.ArialBold;
+	aLabel11.BackgroundTransparency = 1;
+	aLabel11.Position = UDim2.new(0, 5, 0, 55);
+	aLabel11.Name = "Label";
+
+	aRGBHolder2.MouseLeave:connect(function()
+		aRGBHolder2.Visible = false;
+	end)
+
+	p.Changed:connect(function(a)
+		if tostring(a) == "CanvasSize" or tostring(a) == "CanvasPosition" then
+			aRGBHolder2.Visible = false;
+		end
+	end)
+
+	return aRGBHolder2;
+end
+
+function GetRGBBoxes(obj)
+	local result = {};
+	if obj:FindFirstChild("Frame"):FindFirstChild("Frame"):FindFirstChild("RBox") then
+		result["Red"] = obj:FindFirstChild("Frame"):FindFirstChild("Frame"):FindFirstChild("RBox");
+	end
+	if obj:FindFirstChild("Frame"):FindFirstChild("Frame"):FindFirstChild("GBox") then
+		result["Green"] = obj:FindFirstChild("Frame"):FindFirstChild("Frame"):FindFirstChild("GBox");
+	end
+	if obj:FindFirstChild("Frame"):FindFirstChild("Frame"):FindFirstChild("BBox") then
+		result["Blue"] = obj:FindFirstChild("Frame"):FindFirstChild("Frame"):FindFirstChild("BBox");
+	end
+	return result;
+end
+
+function PlayerButton(p,name,pos)
+	local aTextButton4 = Instance.new("TextButton",p);
+	aTextButton4.FontSize = Enum.FontSize.Size14;
+	aTextButton4.BackgroundColor3 = DarkBlue;
+	aTextButton4.TextXAlignment = Enum.TextXAlignment.Left;
+	aTextButton4.Size = UDim2.new(1, -20, 0, 30);
+	aTextButton4.TextColor3 = White;
+	aTextButton4.BorderColor3 = White;
+	aTextButton4.Text = "   "..name;
+	aTextButton4.Font = Enum.Font.Arial;
+	aTextButton4.Position = UDim2.new(0, 5, 0, 5 + (35*pos));
+
+	local aInfo5 = Instance.new("TextButton",aTextButton4);
+	aInfo5.FontSize = Enum.FontSize.Size14;
+	aInfo5.ZIndex = 2;
+	aInfo5.BorderSizePixel = 0;
+	aInfo5.BackgroundColor3 = LightBlue;
+	aInfo5.Size = UDim2.new(0, -20, 1, -10);
+	aInfo5.TextColor3 = White;
+	aInfo5.Text = "?";
+	aInfo5.Font = Enum.Font.ArialBold;
+	--aInfo5.BackgroundTransparency = 0.5;
+	aInfo5.Position = UDim2.new(1, -5, 0, 5);
+	aInfo5.Name = "Info";
+
+	local atpme6 = Instance.new("TextButton",aTextButton4);
+	atpme6.FontSize = Enum.FontSize.Size14;
+	atpme6.ZIndex = 2;
+	atpme6.BorderSizePixel = 0;
+	atpme6.BackgroundColor3 = LightBlue;
+	atpme6.Size = UDim2.new(0, -50, 1, -10);
+	atpme6.TextColor3 = White;
+	atpme6.Text = "TP Me";
+	atpme6.Font = Enum.Font.ArialBold;
+	--atpme6.BackgroundTransparency = 0.5;
+	atpme6.Position = UDim2.new(1, -30, 0, 5);
+	atpme6.Name = "tpme";
+
+	local atpthem7 = Instance.new("TextButton",aTextButton4);
+	atpthem7.FontSize = Enum.FontSize.Size14;
+	atpthem7.ZIndex = 2;
+	atpthem7.BorderSizePixel = 0;
+	atpthem7.BackgroundColor3 = LightBlue;
+	atpthem7.Size = UDim2.new(0, -80, 1, -10);
+	atpthem7.TextColor3 = White;
+	atpthem7.Text = "TP Selected";
+	atpthem7.Font = Enum.Font.ArialBold;
+	--atpthem7.BackgroundTransparency = 0.5;
+	atpthem7.Position = UDim2.new(1, -85, 0, 5);
+	atpthem7.Name = "tpthem";
+
+	local meh = GetPlayer(name);
+
+	atpthem7.MouseButton1Click:connect(function()
+		RunOnSelected(function(me) fTeleport(me,meh) end)
+	end)
+
+	atpme6.MouseButton1Click:connect(function()
+		fTeleport(LocalPlayer,meh)
+	end)
+
+	if IfPlayerSelected(name,Selected) then
+		aTextButton4.BackgroundColor3 = LightBlue;
+		aInfo5.BackgroundColor3 = DarkBlue;
+		atpme6.BackgroundColor3 = DarkBlue;
+		atpthem7.BackgroundColor3 = DarkBlue;
+	end
+
+	aTextButton4.MouseButton1Click:connect(function()
+		TogglePlayerSelection(name,Selected);
+		if IfPlayerSelected(name,Selected) then
+			aTextButton4.BackgroundColor3 = LightBlue;
+			aInfo5.BackgroundColor3 = DarkBlue;
+			atpme6.BackgroundColor3 = DarkBlue;
+			atpthem7.BackgroundColor3 = DarkBlue;
+		else
+			aTextButton4.BackgroundColor3 = DarkBlue;
+			aInfo5.BackgroundColor3 = LightBlue;
+			atpme6.BackgroundColor3 = LightBlue;
+			atpthem7.BackgroundColor3 = LightBlue;
+		end
+	end)
+
+	aInfo5.MouseEnter:connect(function()
+		aDesc8.Visible = true;
+		aName10.Text = name;
+		aUserImage11.Image = "http://www.roblox.com/Thumbs/Avatar.ashx?x=150&y=150&Format=Png&username="..name
+		aUserId13.Text = GetId(name);
+		aAge16.Text = GetAge(name);
+		aMembershipType17.Text = GetMemberShip(name);
+		if IfPlayerSelected(name,Favorite) then
+			Favorited.Visible = true;
+		end
+	end)
+
+	aInfo5.MouseLeave:connect(function()
+		aDesc8.Visible = false;
+		Favorited.Visible = false;
+	end)
+
+	if IfPlayerSelected(name,Favorite) then
+		aTextButton4.TextColor3 = Yellow;
+		aTextButton4.BorderColor3 = Yellow;
+		aInfo5.TextColor3 = Yellow;
+		atpme6.TextColor3 = Yellow;
+		atpthem7.TextColor3 = Yellow;
+	end
+
+	aInfo5.MouseButton1Click:connect(function()
+		TogglePlayerSelection(name,Favorite);
+		RefreshPlayerList(plastsearch);
+		if IfPlayerSelected(name,Favorite) then
+			aTextButton4.TextColor3 = Yellow;
+			aTextButton4.BorderColor3 = Yellow;
+			aInfo5.TextColor3 = Yellow;
+			atpme6.TextColor3 = Yellow;
+			atpthem7.TextColor3 = Yellow;
+			Favorited.Visible = true;
+		else
+			aTextButton4.TextColor3 = White;
+			aTextButton4.BorderColor3 = White;
+			aInfo5.TextColor3 = White;
+			atpme6.TextColor3 = White;
+			atpthem7.TextColor3 = White;
+			Favorited.Visible = false;
+		end
+	end)
+
+	return aTextButton4;
+end
+
+function RefreshPlayerList(search)
+	Clear(aScrollingFrame3);
+	local lpos = 0;
+	for i,v in pairs(Players:GetChildren()) do
+		if v:IsA("Player") then
+			if IfPlayerSelected(v.Name,Favorite) then
+				if search == "" or Match(string.lower(v.Name),string.lower(search)) and search ~= "" then	
+					PlayerButton(aScrollingFrame3,v.Name,lpos);
+					lpos = lpos + 1;
+				end
+			end
+		end
+	end
+	for i,v in pairs(Players:GetChildren()) do
+		if v:IsA("Player") then
+			if not IfPlayerSelected(v.Name,Favorite) then
+				if search == "" or Match(string.lower(v.Name),string.lower(search)) and search ~= "" then	
+					PlayerButton(aScrollingFrame3,v.Name,lpos);
+					lpos = lpos + 1;
+				end
+			end
+		end
+	end
+	aScrollingFrame3.CanvasSize = UDim2.new(0,0,0,5+(35*lpos))
+end
+
+function TabPlayerSelectionPage()
+	local PlayerSelectionPage = EmptyPage("Player Selection");
+
+	local aFrame1 = Instance.new("Frame",PlayerSelectionPage);
+	aFrame1.BackgroundColor3 = DarkBlue;
+	aFrame1.Size = UDim2.new(1, -10, 1, -70);
+	aFrame1.BorderColor3 = White;
+	aFrame1.Position = UDim2.new(0, 5, 0, 65);
+
+	local aFrame2 = Instance.new("Frame",aFrame1);
+	aFrame2.BorderSizePixel = 0;
+	aFrame2.BackgroundColor3 = White;
+	aFrame2.Size = UDim2.new(0, 1, 1, 0);
+	aFrame2.BorderColor3 = White;
+	aFrame2.Position = UDim2.new(1, -10, 0, 0);
+
+	aScrollingFrame3 = Instance.new("ScrollingFrame",aFrame1);
+	aScrollingFrame3.BorderSizePixel = 0;
+	aScrollingFrame3.TopImage = ScrollBarGfx;
+	aScrollingFrame3.BackgroundColor3 = DarkBlue;
+	aScrollingFrame3.ScrollBarThickness = 9;
+	aScrollingFrame3.MidImage = ScrollBarGfx;
+	aScrollingFrame3.BottomImage = ScrollBarGfx;
+	aScrollingFrame3.Size = UDim2.new(1, 0, 1, 0);
+	aScrollingFrame3.BackgroundTransparency = 1;
+
+	aDesc8 = Instance.new("Frame",aFrame1);
+	aDesc8.ZIndex = 5;
+	aDesc8.BackgroundColor3 = DarkBlue;
+	aDesc8.Size = UDim2.new(0, 200, 0, 220);
+	aDesc8.BorderColor3 = White;
+	aDesc8.Position = UDim2.new(0.5, -100, 0.5, -110);
+	aDesc8.Name = "Desc";
+	aDesc8.Visible = false;
+
+	Favorited = Instance.new("TextLabel",aDesc8);
+	Favorited.FontSize = Enum.FontSize.Size14;
+	Favorited.TextStrokeTransparency = 1;
+	Favorited.ZIndex = 6;
+	Favorited.TextXAlignment = Enum.TextXAlignment.Left;
+	Favorited.Size = UDim2.new(0, 50, 0, 10);
+	Favorited.TextColor3 = Yellow;
+	Favorited.Text = "Favorited";
+	Favorited.Font = Enum.Font.Arial;
+	Favorited.BackgroundTransparency = 1;
+	Favorited.Position = UDim2.new(0.5, -25, 0, 10);
+	Favorited.Name = "Favorited";
+	Favorited.Visible = false;
+	Favorited.ZIndex = 7;
+
+	local aLabel9 = Instance.new("TextLabel",aDesc8);
+	aLabel9.FontSize = Enum.FontSize.Size14;
+	aLabel9.ZIndex = 6;
+	aLabel9.BackgroundColor3 = White;
+	aLabel9.TextXAlignment = Enum.TextXAlignment.Left;
+	aLabel9.Size = UDim2.new(0, 0, 0, 10);
+	aLabel9.TextColor3 = White;
+	aLabel9.Text = "Name:";
+	aLabel9.Font = Enum.Font.Arial;
+	aLabel9.BackgroundTransparency = 1;
+	aLabel9.Name = "Label";
+
+	aName10 = Instance.new("TextLabel",aDesc8);
+	aName10.FontSize = Enum.FontSize.Size14;
+	aName10.ZIndex = 6;
+	aName10.BackgroundColor3 = White;
+	aName10.TextXAlignment = Enum.TextXAlignment.Right;
+	aName10.Size = UDim2.new(0, 0, 0, 10);
+	aName10.TextColor3 = White;
+	aName10.Text = "NameHere";
+	aName10.Font = Enum.Font.Arial;
+	aName10.BackgroundTransparency = 1;
+	aName10.Position = UDim2.new(1, 0, 0, 0);
+	aName10.Name = "Name";
+
+	aUserImage11 = Instance.new("ImageLabel",aDesc8);
+	aUserImage11.Active = true;
+	aUserImage11.ZIndex = 6;
+	aUserImage11.BackgroundColor3 = DarkBlue;
+	aUserImage11.Image = "http://www.roblox.com/Thumbs/Avatar.ashx?x=150&y=150&Format=Png&username=";
+	aUserImage11.Size = UDim2.new(0, 150, 0, 150);
+	aUserImage11.BorderColor3 = White;
+	aUserImage11.Position = UDim2.new(0.5, -75, 0, 17);
+	aUserImage11.Name = "UserImage";
+
+	local aLabel12 = Instance.new("TextLabel",aDesc8);
+	aLabel12.FontSize = Enum.FontSize.Size14;
+	aLabel12.ZIndex = 6;
+	aLabel12.BackgroundColor3 = White;
+	aLabel12.TextXAlignment = Enum.TextXAlignment.Left;
+	aLabel12.Size = UDim2.new(0, 0, 0, 10);
+	aLabel12.TextColor3 = White;
+	aLabel12.Text = "UserId:";
+	aLabel12.Font = Enum.Font.Arial;
+	aLabel12.BackgroundTransparency = 1;
+	aLabel12.Position = UDim2.new(0, 0, 0, 175);
+	aLabel12.Name = "Label";
+
+	aUserId13 = Instance.new("TextLabel",aDesc8);
+	aUserId13.FontSize = Enum.FontSize.Size14;
+	aUserId13.ZIndex = 6;
+	aUserId13.BackgroundColor3 = White;
+	aUserId13.TextXAlignment = Enum.TextXAlignment.Right;
+	aUserId13.Size = UDim2.new(0, 0, 0, 10);
+	aUserId13.TextColor3 = White;
+	aUserId13.Text = "1337";
+	aUserId13.Font = Enum.Font.Arial;
+	aUserId13.BackgroundTransparency = 1;
+	aUserId13.Position = UDim2.new(1, 0, 0, 175);
+	aUserId13.Name = "UserId";
+
+	local aLabel14 = Instance.new("TextLabel",aDesc8);
+	aLabel14.FontSize = Enum.FontSize.Size14;
+	aLabel14.ZIndex = 6;
+	aLabel14.BackgroundColor3 = White;
+	aLabel14.TextXAlignment = Enum.TextXAlignment.Left;
+	aLabel14.Size = UDim2.new(0, 0, 0, 10);
+	aLabel14.TextColor3 = White;
+	aLabel14.Text = "Age:";
+	aLabel14.Font = Enum.Font.Arial;
+	aLabel14.BackgroundTransparency = 1;
+	aLabel14.Position = UDim2.new(0, 0, 0, 190);
+	aLabel14.Name = "Label";
+
+	local aLabel15 = Instance.new("TextLabel",aDesc8);
+	aLabel15.FontSize = Enum.FontSize.Size14;
+	aLabel15.ZIndex = 6;
+	aLabel15.BackgroundColor3 = White;
+	aLabel15.TextXAlignment = Enum.TextXAlignment.Left;
+	aLabel15.Size = UDim2.new(0, 0, 0, 10);
+	aLabel15.TextColor3 = White;
+	aLabel15.Text = "MembershipType:";
+	aLabel15.Font = Enum.Font.Arial;
+	aLabel15.BackgroundTransparency = 1;
+	aLabel15.Position = UDim2.new(0, 0, 0, 205);
+	aLabel15.Name = "Label";
+
+	aAge16 = Instance.new("TextLabel",aDesc8);
+	aAge16.FontSize = Enum.FontSize.Size14;
+	aAge16.ZIndex = 6;
+	aAge16.BackgroundColor3 = White;
+	aAge16.TextXAlignment = Enum.TextXAlignment.Right;
+	aAge16.Size = UDim2.new(0, 0, 0, 10);
+	aAge16.TextColor3 = White;
+	aAge16.Text = "1337";
+	aAge16.Font = Enum.Font.Arial;
+	aAge16.BackgroundTransparency = 1;
+	aAge16.Position = UDim2.new(1, 0, 0, 190);
+	aAge16.Name = "Age";
+
+	aMembershipType17 = Instance.new("TextLabel",aDesc8);
+	aMembershipType17.FontSize = Enum.FontSize.Size14;
+	aMembershipType17.ZIndex = 6;
+	aMembershipType17.BackgroundColor3 = White;
+	aMembershipType17.TextXAlignment = Enum.TextXAlignment.Right;
+	aMembershipType17.Size = UDim2.new(0, 0, 0, 10);
+	aMembershipType17.TextColor3 = White;
+	aMembershipType17.Text = "NBC";
+	aMembershipType17.Font = Enum.Font.Arial;
+	aMembershipType17.BackgroundTransparency = 1;
+	aMembershipType17.Position = UDim2.new(1, 0, 0, 205);
+	aMembershipType17.Name = "MembershipType";
+
+	local aTextButton18 = Instance.new("TextButton",PlayerSelectionPage);
+	aTextButton18.FontSize = Enum.FontSize.Size14;
+	aTextButton18.ZIndex = 2;
+	aTextButton18.BorderSizePixel = 0;
+	aTextButton18.BackgroundColor3 = DarkBlue;
+	aTextButton18.Size = UDim2.new(0, -140, 0, 25);
+	aTextButton18.TextColor3 = White;
+	aTextButton18.Text = "Reset Search";
+	aTextButton18.Font = Enum.Font.ArialBold;
+	aTextButton18.BackgroundTransparency = 0.75;
+	aTextButton18.Position = UDim2.new(1, -225, 0, 5);
+
+	local aTextBox19 = Instance.new("TextBox",PlayerSelectionPage);
+	aTextBox19.FontSize = Enum.FontSize.Size14;
+	aTextBox19.BackgroundColor3 = DarkBlue;
+	aTextBox19.ClipsDescendants = true;
+	aTextBox19.Size = UDim2.new(0, -160, 0, 25);
+	aTextBox19.TextColor3 = White;
+	aTextBox19.BorderColor3 = White;
+	aTextBox19.Text = "";
+	aTextBox19.Font = Enum.Font.Arial;
+	aTextBox19.Position = UDim2.new(1, -5, 0, 5);
+
+	local aLabel20 = Instance.new("TextLabel",PlayerSelectionPage);
+	aLabel20.FontSize = Enum.FontSize.Size14;
+	aLabel20.BackgroundColor3 = White;
+	aLabel20.TextXAlignment = Enum.TextXAlignment.Right;
+	aLabel20.Size = UDim2.new(0, -100, 0, 25);
+	aLabel20.TextColor3 = White;
+	aLabel20.Text = "Search: ";
+	aLabel20.Font = Enum.Font.Arial;
+	aLabel20.BackgroundTransparency = 1;
+	aLabel20.Position = UDim2.new(1, -170, 0, 5);
+	aLabel20.Name = "Label";
+
+	local aMeh21 = Instance.new("TextButton",PlayerSelectionPage);
+	aMeh21.FontSize = Enum.FontSize.Size14;
+	aMeh21.ZIndex = 2;
+	aMeh21.BorderSizePixel = 0;
+	aMeh21.BackgroundColor3 = DarkBlue;
+	aMeh21.Size = UDim2.new(0, 35, 0, 25);
+	aMeh21.TextColor3 = White;
+	aMeh21.Text = "ME";
+	aMeh21.Font = Enum.Font.ArialBold;
+	aMeh21.BackgroundTransparency = 0.75;
+	aMeh21.Position = UDim2.new(0, 55, 0, 35);
+	aMeh21.Name = "Meh";
+
+	local aOthers22 = Instance.new("TextButton",PlayerSelectionPage);
+	aOthers22.FontSize = Enum.FontSize.Size14;
+	aOthers22.ZIndex = 2;
+	aOthers22.BorderSizePixel = 0;
+	aOthers22.BackgroundColor3 = DarkBlue;
+	aOthers22.Size = UDim2.new(0, 50, 0, 25);
+	aOthers22.TextColor3 = White;
+	aOthers22.Text = "Others";
+	aOthers22.Font = Enum.Font.ArialBold;
+	aOthers22.BackgroundTransparency = 0.75;
+	aOthers22.Position = UDim2.new(0, 95, 0, 35);
+	aOthers22.Name = "Others";
+
+	local aNone23 = Instance.new("TextButton",PlayerSelectionPage);
+	aNone23.FontSize = Enum.FontSize.Size14;
+	aNone23.ZIndex = 2;
+	aNone23.BorderSizePixel = 0;
+	aNone23.BackgroundColor3 = DarkBlue;
+	aNone23.Size = UDim2.new(0, 45, 0, 25);
+	aNone23.TextColor3 = White;
+	aNone23.Text = "None";
+	aNone23.Font = Enum.Font.ArialBold;
+	aNone23.BackgroundTransparency = 0.75;
+	aNone23.Position = UDim2.new(0, 5, 0, 35);
+	aNone23.Name = "None";
+
+	local aAll24 = Instance.new("TextButton",PlayerSelectionPage);
+	aAll24.FontSize = Enum.FontSize.Size14;
+	aAll24.ZIndex = 2;
+	aAll24.BorderSizePixel = 0;
+	aAll24.BackgroundColor3 = DarkBlue;
+	aAll24.Size = UDim2.new(0, 30, 0, 25);
+	aAll24.TextColor3 = White;
+	aAll24.Text = "All";
+	aAll24.Font = Enum.Font.ArialBold;
+	aAll24.BackgroundTransparency = 0.75;
+	aAll24.Position = UDim2.new(0, 150, 0, 35);
+	aAll24.Name = "All";
+
+	local aNon_Guests25 = Instance.new("TextButton",PlayerSelectionPage);
+	aNon_Guests25.FontSize = Enum.FontSize.Size14;
+	aNon_Guests25.ZIndex = 2;
+	aNon_Guests25.BorderSizePixel = 0;
+	aNon_Guests25.BackgroundColor3 = DarkBlue;
+	aNon_Guests25.Size = UDim2.new(0, 35, 0, 25);
+	aNon_Guests25.TextColor3 = White;
+	aNon_Guests25.Text = "Non-";
+	aNon_Guests25.Font = Enum.Font.ArialBold;
+	aNon_Guests25.BackgroundTransparency = 0.75;
+	aNon_Guests25.Position = UDim2.new(0, 185, 0, 35);
+	aNon_Guests25.Name = "Non-Friends";
+
+	local aGuests26 = Instance.new("TextButton",PlayerSelectionPage);
+	aGuests26.FontSize = Enum.FontSize.Size14;
+	aGuests26.ZIndex = 2;
+	aGuests26.BorderSizePixel = 0;
+	aGuests26.BackgroundColor3 = DarkBlue;
+	aGuests26.Size = UDim2.new(0, 50, 0, 25);
+	aGuests26.TextColor3 = White;
+	aGuests26.Text = "Friends";
+	aGuests26.Font = Enum.Font.ArialBold;
+	aGuests26.BackgroundTransparency = 0.75;
+	aGuests26.Position = UDim2.new(0, 225, 0, 35);
+	aGuests26.Name = "Friends";
+
+	local aNon_Favs27 = Instance.new("TextButton",PlayerSelectionPage);
+	aNon_Favs27.FontSize = Enum.FontSize.Size14;
+	aNon_Favs27.ZIndex = 2;
+	aNon_Favs27.BorderSizePixel = 0;
+	aNon_Favs27.BackgroundColor3 = DarkBlue;
+	aNon_Favs27.Size = UDim2.new(0, 35, 0, 25);
+	aNon_Favs27.TextColor3 = White;
+	aNon_Favs27.Text = "Non-";
+	aNon_Favs27.Font = Enum.Font.ArialBold;
+	aNon_Favs27.BackgroundTransparency = 0.75;
+	aNon_Favs27.Position = UDim2.new(0, 280, 0, 35);
+	aNon_Favs27.Name = "Non-Favs";
+
+	local aFavs28 = Instance.new("TextButton",PlayerSelectionPage);
+	aFavs28.FontSize = Enum.FontSize.Size14;
+	aFavs28.ZIndex = 2;
+	aFavs28.BorderSizePixel = 0;
+	aFavs28.BackgroundColor3 = DarkBlue;
+	aFavs28.Size = UDim2.new(0, 55, 0, 25);
+	aFavs28.TextColor3 = White;
+	aFavs28.Text = "Favorites";
+	aFavs28.Font = Enum.Font.ArialBold;
+	aFavs28.BackgroundTransparency = 0.75;
+	aFavs28.Position = UDim2.new(0, 320, 0, 35);
+	aFavs28.Name = "Favs";
+
+	aTextBox19.FocusLost:connect(function(Enter)
+		if Enter then
+			RefreshPlayerList(aTextBox19.Text);
+			plastsearch = aTextBox19.Text;
+			aTextBox19.Text = "";
+		end
+	end)
+
+	aTextButton18.MouseButton1Click:connect(function() 
+		RefreshPlayerList(""); 
+		plastsearch = "";
+	end);
+
+	aNone23.MouseButton1Click:connect(function() Clear(Selected); end);
+	aMeh21.MouseButton1Click:connect(function() 
+		Clear(Selected); 
+		CreateSelectedPlayer(LocalPlayer.Name,Selected);
+	end);
+	aOthers22.MouseButton1Click:connect(function() 
+		Clear(Selected)
+		for i,v in pairs(Players:GetChildren()) do
+			if v ~= LocalPlayer then
+				CreateSelectedPlayer(v.Name,Selected);
+			end
+		end
+	end)
+	aAll24.MouseButton1Click:connect(function() 
+		Clear(Selected)
+		for i,v in pairs(Players:GetChildren()) do
+			CreateSelectedPlayer(v.Name,Selected);
+		end
+	end)
+	aNon_Guests25.MouseButton1Click:connect(function() 
+		Clear(Selected)
+		for i, v : Player in pairs(Players:GetChildren()) do
+			if v:IsFriendsWith(LocalPlayer.UserId) then
+				CreateSelectedPlayer(v.Name,Selected);
+			end
+			--if not string.match(v.Name, "Guest ") then
+			--	CreateSelectedPlayer(v.Name,Selected);
+			--end
+		end
+	end)
+	aGuests26.MouseButton1Click:connect(function() 
+		Clear(Selected)
+		for i, v : Player in pairs(Players:GetChildren()) do
+			if v:IsFriendsWith(LocalPlayer.UserId) then
+				CreateSelectedPlayer(v.Name,Selected);
+			end
+			--if string.match(v.Name, "Guest ") then
+			--	CreateSelectedPlayer(v.Name,Selected);
+			--end
+		end
+	end)
+	aNon_Favs27.MouseButton1Click:connect(function() 
+		Clear(Selected)
+		for i,v in pairs(Players:GetChildren()) do
+			if not IfPlayerSelected(v.Name,Favorite) then
+				CreateSelectedPlayer(v.Name,Selected);
+			end
+		end
+	end)
+	aFavs28.MouseButton1Click:connect(function() 
+		Clear(Selected)
+		for i,v in pairs(Players:GetChildren()) do
+			if IfPlayerSelected(v.Name,Favorite) then
+				CreateSelectedPlayer(v.Name,Selected);
+			end
+		end
+	end)
+end
+
+function UnBanButton(p,name,pos)
+	local aTextButton4 = Instance.new("TextButton",p);
+	aTextButton4.FontSize = Enum.FontSize.Size14;
+	aTextButton4.BackgroundColor3 = DarkBlue;
+	aTextButton4.TextXAlignment = Enum.TextXAlignment.Left;
+	aTextButton4.Size = UDim2.new(1, -20, 0, 30);
+	aTextButton4.TextColor3 = White;
+	aTextButton4.BorderColor3 = White;
+	aTextButton4.Text = "   "..name;
+	aTextButton4.Font = Enum.Font.Arial;
+	aTextButton4.Position = UDim2.new(0, 5, 0, 5 + (35*pos));
+
+	local unbanbutton = Instance.new("TextButton",aTextButton4);
+	unbanbutton.FontSize = Enum.FontSize.Size14;
+	unbanbutton.ZIndex = 2;
+	unbanbutton.BorderSizePixel = 0;
+	unbanbutton.BackgroundColor3 = LightBlue;
+	unbanbutton.Size = UDim2.new(0, -60, 1, -10);
+	unbanbutton.TextColor3 = White;
+	unbanbutton.Text = "UNBAN";
+	unbanbutton.Font = Enum.Font.ArialBold;
+	unbanbutton.Position = UDim2.new(1, -5, 0, 5);
+	unbanbutton.Name = "unbanbutton";
+
+
+
+	unbanbutton.MouseButton1Click:connect(function()
+		if BanFolder:FindFirstChild(name) ~= nil then
+			BanFolder:FindFirstChild(name):Remove()
+		end
+	end)
+
+	return aTextButton4;
+end
+
+function RefreshBanList(search,SFrame)
+	Clear(SFrame);
+	local lpos = 0;
+	for i,v in pairs(BanFolder:GetChildren()) do
+		if search == "" or Match(string.lower(v.Name),string.lower(search)) and search ~= "" then	
+			UnBanButton(SFrame,v.Name,lpos);
+			lpos = lpos + 1;
+		end
+	end
+	SFrame.CanvasSize = UDim2.new(0,0,0,5+(35*lpos))
+end
+
+function TabBanDataPage()
+	local BannedSelectionPage = EmptyPage("BannedPlayers");
+
+	local aFrame1 = Instance.new("Frame",BannedSelectionPage);
+	aFrame1.BackgroundColor3 = DarkBlue;
+	aFrame1.Size = UDim2.new(1, -10, 1, -40);
+	aFrame1.BorderColor3 = White;
+	aFrame1.Position = UDim2.new(0, 5, 0, 35);
+
+	local aFrame2 = Instance.new("Frame",aFrame1);
+	aFrame2.BorderSizePixel = 0;
+	aFrame2.BackgroundColor3 = White;
+	aFrame2.Size = UDim2.new(0, 1, 1, 0);
+	aFrame2.BorderColor3 = White;
+	aFrame2.Position = UDim2.new(1, -10, 0, 0);
+
+	SFrame = Instance.new("ScrollingFrame",aFrame1);
+	SFrame.BorderSizePixel = 0;
+	SFrame.TopImage = ScrollBarGfx;
+	SFrame.BackgroundColor3 = DarkBlue;
+	SFrame.ScrollBarThickness = 9;
+	SFrame.MidImage = ScrollBarGfx;
+	SFrame.BottomImage = ScrollBarGfx;
+	SFrame.Size = UDim2.new(1, 0, 1, 0);
+	SFrame.BackgroundTransparency = 1;
+	SFrame.CanvasSize = UDim2.new(0, 0, 0, 0);
+
+	local aTextButton18 = Instance.new("TextButton",BannedSelectionPage);
+	aTextButton18.FontSize = Enum.FontSize.Size14;
+	aTextButton18.ZIndex = 2;
+	aTextButton18.BorderSizePixel = 0;
+	aTextButton18.BackgroundColor3 = DarkBlue;
+	aTextButton18.Size = UDim2.new(0, -140, 0, 25);
+	aTextButton18.TextColor3 = White;
+	aTextButton18.Text = "Reset Search";
+	aTextButton18.Font = Enum.Font.ArialBold;
+	aTextButton18.BackgroundTransparency = 0.75;
+	aTextButton18.Position = UDim2.new(1, -225, 0, 5);
+
+	local aTextBox19 = Instance.new("TextBox",BannedSelectionPage);
+	aTextBox19.FontSize = Enum.FontSize.Size14;
+	aTextBox19.BackgroundColor3 = DarkBlue;
+	aTextBox19.ClipsDescendants = true;
+	aTextBox19.Size = UDim2.new(0, -160, 0, 25);
+	aTextBox19.TextColor3 = White;
+	aTextBox19.BorderColor3 = White;
+	aTextBox19.Text = "";
+	aTextBox19.Font = Enum.Font.Arial;
+	aTextBox19.Position = UDim2.new(1, -5, 0, 5);
+
+	local aLabel20 = Instance.new("TextLabel",BannedSelectionPage);
+	aLabel20.FontSize = Enum.FontSize.Size14;
+	aLabel20.BackgroundColor3 = White;
+	aLabel20.TextXAlignment = Enum.TextXAlignment.Right;
+	aLabel20.Size = UDim2.new(0, -100, 0, 25);
+	aLabel20.TextColor3 = White;
+	aLabel20.Text = "Search: ";
+	aLabel20.Font = Enum.Font.Arial;
+	aLabel20.BackgroundTransparency = 1;
+	aLabel20.Position = UDim2.new(1, -170, 0, 5);
+	aLabel20.Name = "Label";
+
+	aTextBox19.FocusLost:connect(function(Enter)
+		if Enter then
+			RefreshBanList(aTextBox19.Text,SFrame);
+			blastsearch = aTextBox19.Text;
+			aTextBox19.Text = "";
+		end
+	end)
+
+	aTextButton18.MouseButton1Click:connect(function() 
+		RefreshBanList("",SFrame); 
+		blastsearch = "";
+	end);
+
+	BanFolder.ChildAdded:connect(function()
+		RefreshBanList(blastsearch,SFrame)
+	end)
+
+	BanFolder.ChildRemoved:connect(function()
+		RefreshBanList(blastsearch,SFrame)
+	end)
+	RefreshBanList(aTextBox19.Text,SFrame);
+end
+
+local Template = Instance.new("TextLabel");
+Template.FontSize = Enum.FontSize.Size14;
+Template.BackgroundColor3 = LightBlue; --DarkBlue;
+Template.BackgroundTransparency = 0.5;
+Template.TextXAlignment = Enum.TextXAlignment.Left;
+Template.Size = UDim2.new(1, -20, 0, 30);
+Template.TextColor3 = White;
+Template.BorderColor3 = White;
+Template.BorderSizePixel = 0;
+Template.Font = Enum.Font.Arial;
+
+local Template2 = Instance.new("TextButton");
+Template2.FontSize = Enum.FontSize.Size14;
+Template2.BackgroundColor3 = LightBlue;
+Template2.BackgroundTransparency = 0.5;
+Template2.Size = UDim2.new(1, 0, 1, 0);
+Template2.TextColor3 = White;
+Template2.BorderColor3 = White;
+Template2.Font = Enum.Font.Arial;
+Template2.BorderSizePixel = 0;
+Template2.ZIndex = 2;
+
+local TemplateTextBox = Instance.new("TextBox");
+TemplateTextBox.FontSize = Enum.FontSize.Size14;
+TemplateTextBox.BackgroundColor3 = DarkBlue;
+TemplateTextBox.Size = UDim2.new(0, -120, 1, -10);
+TemplateTextBox.Position = UDim2.new(1, -5, 0, 5);
+TemplateTextBox.TextColor3 = White;
+TemplateTextBox.BorderColor3 = White;
+TemplateTextBox.Font = Enum.Font.Arial;
+TemplateTextBox.Text = ""
+TemplateTextBox.BorderSizePixel = 0;
+TemplateTextBox.ZIndex = 2;
+
+local TemplateButton = Instance.new("TextButton");
+TemplateButton.FontSize = Enum.FontSize.Size14;
+TemplateButton.BorderSizePixel = 0;
+TemplateButton.BackgroundColor3 = DarkBlue; --LightBlue;
+TemplateButton.Size = UDim2.new(0, -100, 1, -10);
+TemplateButton.TextColor3 = White;
+TemplateButton.Font = Enum.Font.ArialBold;
+TemplateButton.Position = UDim2.new(1, -5, 0, 5);
+TemplateButton.BorderSizePixel = 0;
+TemplateButton.ZIndex = 2;
+
+local RGBPick;
+local RgbBoxes;
+local RedBox;
+local GreenBox;
+local BlueBox;
+
+function getPosFromDict(dict,pos)
+	local keys = {}	
+	for key,v in pairs(dict) do
+		table.insert(keys,key)
+	end
+	return keys[pos]
+end
+
+function MakeCommandsButton(pa,List,search)
+	Clear(pa);
+	local Total = #pa:GetChildren();
+	for i=1, #List do
+		local v = List[i]
+		local objName = ""
+		for k, c in pairs(v) do
+			if string.lower(tostring(k)) == "name" then
+				objName = tostring(c);
+			end
+		end
+		if (Match(string.lower(objName),string.lower(search)) and search ~= "") or search == "" then
+			for k, c in pairs(v) do
+				if tostring(k) == "type" then
+					local BG = Template:clone();
+					BG.Parent = pa;
+					BG.Position = UDim2.new(0,5,0,5+(35*Total));
+					BG.BackgroundColor3 = LightBlue;
+					BG.TextColor3 = White;
+					BG.BorderColor3 = White;
+					if string.lower(tostring(c)) == string.lower("TextLabel") then
+						for l, p in pairs(v) do
+							if string.lower(tostring(l)) == "text" then
+								BG.Text = tostring(p);
+							end
+						end
+					end
+					if string.lower(tostring(c)) == string.lower("ButtonSingle") then
+						local Button = Template2:clone();
+						Button.BackgroundColor3 = LightBlue;
+						Button.TextColor3 = White;
+						Button.BorderColor3 = White;
+						Button.Parent = BG;
+						BG.Transparency = 1;
+						for l, p in pairs(v) do
+							if string.lower(tostring(l)) == "name" then
+								Button.Text = tostring(p);
+							end
+							if string.lower(tostring(l)) == "func" then
+								Button.MouseButton1Click:connect(function()
+									pcall(function() p() end)
+								end)
+							end
+						end
+					end
+					if string.lower(tostring(c)) == string.lower("ColorPicker") then
+						local Button = Instance.new("TextButton",BG);
+						Button.Name = "ColorPickerSquare"
+						Button.Size = UDim2.new(0, 20, 0, 20);
+						Button.Position = UDim2.new(1, -25, 0, 5);
+						Button.BorderColor3 = White;
+						Button.ZIndex = 7;
+						Button.Text = ""
+						for l, p in pairs(v) do
+							if string.lower(tostring(l)) == "name" then
+								BG.Text = "  " .. tostring(p);
+							end
+							if string.lower(tostring(l)) == string.lower("RGB") then
+								Button.BackgroundColor3 = p;
+							end
+							if string.lower(tostring(l)) == "func" then
+								local Chosen = false;
+								RGBPick.Changed:connect(function(p)
+									if p == "Visible" then
+										Chosen = false;
+										Button.ZIndex = 5;
+									end
+								end)
+
+								Button.Changed:connect(function()
+									pcall(function() p(Button.BackgroundColor3) end)
+								end)
+
+								RedBox.FocusLost:connect(function(Enter)
+									if Chosen == true then
+										if RedBox.Text == nil or RedBox.Text == "" then RedBox.Text = math.floor(Button.BackgroundColor3.r*255) return end
+										RedBox.Text = tonumber(RedBox.Text)
+										Button.BackgroundColor3 = Color3.new(tonumber(RedBox.Text)/255,Button.BackgroundColor3.g,Button.BackgroundColor3.b)
+									end
+								end)
+								GreenBox.FocusLost:connect(function(Enter)
+									if Chosen == true then
+										if GreenBox.Text == nil or GreenBox.Text == "" then GreenBox.Text = math.floor(Button.BackgroundColor3.g*255) return end
+										GreenBox.Text = tonumber(GreenBox.Text)
+										Button.BackgroundColor3 = Color3.new(Button.BackgroundColor3.r,tonumber(GreenBox.Text)/255,Button.BackgroundColor3.b)
+									end
+								end)
+								BlueBox.FocusLost:connect(function(Enter)
+									if Chosen == true then
+										if BlueBox.Text == nil or BlueBox.Text == "" then BlueBox.Text = math.floor(Button.BackgroundColor3.b*255) return end
+										BlueBox.Text = tonumber(BlueBox.Text)
+										Button.BackgroundColor3 = Color3.new(Button.BackgroundColor3.r,Button.BackgroundColor3.g,tonumber(BlueBox.Text)/255)
+									end
+								end)
+								Button.MouseButton1Click:connect(function()
+									if RGBPick ~= nil then
+										if RedBox ~= nil then
+											if GreenBox ~= nil then
+												if BlueBox ~= nil then
+													if Chosen == false then
+														RedBox.Text = math.floor(Button.BackgroundColor3.r*255)
+														GreenBox.Text = math.floor(Button.BackgroundColor3.g*255)
+														BlueBox.Text = math.floor(Button.BackgroundColor3.b*255)
+														RGBPick.Position = (((Button.Position - UDim2.new(0,0,0,pa.CanvasPosition.Y)) - UDim2.new(0,105,0,5)) +  UDim2.new(0,0,0,BG.Position.Y.Offset + 35 + 30));
+														RGBPick.Visible = true;
+														Button.ZIndex = 7;
+														Chosen = true;
+													end
+												end
+											end
+										end
+									end
+								end)
+							end
+						end
+					end
+					if string.lower(tostring(c)) == string.lower("ButtonDouble") then
+						local Button = TemplateButton:clone();
+						Button.Parent = BG;
+						Button.BackgroundColor3 = LightBlue;
+						Button.TextColor3 = White;
+						Button.BorderColor3 = White;
+						local Button2 = TemplateButton:clone();
+						Button2.Parent = BG;
+						Button2.Position = UDim2.new(1, -110, 0, 5);
+						Button2.BackgroundColor3 = LightBlue;
+						Button2.TextColor3 = White;
+						Button2.BorderColor3 = White;
+						for l, p in pairs(v) do
+							if string.lower(tostring(l)) == "name" then
+								BG.Text = "  " .. tostring(p);
+							end
+							if string.lower(tostring(l)) == "button1text" then
+								Button.Text = tostring(p);
+								Button.Size = UDim2.new(0, -Button.TextBounds.X - 6, Button.Size.Y.Scale, Button.Size.Y.Offset);
+								Button2.Position = Button.Position + UDim2.new(0, -(Button.TextBounds.X + 11), 0, 0);
+							end
+							if tostring(l) == "button2text" then
+								Button2.Text = tostring(p);
+								Button2.Size = UDim2.new(0, -Button2.TextBounds.X - 6, Button2.Size.Y.Scale, Button2.Size.Y.Offset);
+								Button2.Position = Button.Position + UDim2.new(0, -(Button.TextBounds.X + 11), 0, 0);
+							end
+							if string.lower(tostring(l)) == "func1" then
+								Button.MouseButton1Click:connect(function()
+									pcall(function() p() end)
+								end)
+							end
+							if string.lower(tostring(l)) == "func2" then
+								Button2.MouseButton1Click:connect(function()
+									pcall(function() p() end)
+								end)
+							end
+						end
+					end
+					if string.lower(tostring(c)) == string.lower("TextButton") then
+						local Button = TemplateButton:clone();
+						Button.Parent = BG;
+						Button.BackgroundColor3 = LightBlue;
+						Button.TextColor3 = White;
+						Button.BorderColor3 = White;
+						local Button2 = TemplateTextBox:clone();
+						Button2.Parent = BG;
+						Button2.Position = UDim2.new(1, -110, 0, 5);
+						Button2.ClipsDescendants = true;
+						Button2.BackgroundColor3 = DarkBlue;
+						Button2.TextColor3 = White;
+						Button2.BorderColor3 = White;
+						local NumVal = false;
+						for l, p in pairs(v) do
+							if string.lower(tostring(l)) == "name" then
+								BG.Text = "  " .. tostring(p);
+							end
+							if string.lower(tostring(l)) == "buttontext" then
+								Button.Text = tostring(p);
+								Button.Size = UDim2.new(0, -Button.TextBounds.X - 6, Button.Size.Y.Scale, Button.Size.Y.Offset);
+								Button2.Position = Button.Position + UDim2.new(0, -(Button.TextBounds.X + 16), 0, 0);
+							end
+							if string.lower(tostring(l)) == "value" then
+								Button2.Text = tostring(p);
+								Button2.Position = UDim2.new(1, -(Button.TextBounds.X + 16), 0, 5);
+							end
+							if string.lower(tostring(l)) == "numeric" then
+								if p == "true" then
+									NumVal = true;
+								end
+							end
+							if tostring(l) == "func" then
+								Button.MouseButton1Click:connect(function()
+									if NumVal == true and Button2.Text ~= nil and Button2.Text ~= "" then
+										pcall(function() Button2.Text = tonumber(Button2.Text) end)
+									end
+									pcall(function() p(Button2.Text) end)
+								end)
+								Button2.FocusLost:connect(function(Enter)
+									if Enter == true then
+										if NumVal == true and Button2.Text ~= nil and Button2.Text ~= "" then
+											pcall(function() Button2.Text = tonumber(Button2.Text) end)
+										end
+										pcall(function() p(Button2.Text) end)
+									else
+										if NumVal == true and Button2.Text ~= nil and Button2.Text ~= "" then
+											pcall(function() Button2.Text = tonumber(Button2.Text) end)
+										end
+									end
+								end)
+							end
+						end
+					end
+					if string.lower(tostring(c)) == string.lower("KeySelect") then
+						--aFrame0
+						local Button = TemplateButton:clone();
+						Button.Parent = BG;
+						Button.Text = "KeyHere"
+						Button.Size = UDim2.new(0, -140, 1, -10);
+						Button.BackgroundColor3 = LightBlue;
+						Button.TextColor3 = White;
+						Button.BorderColor3 = White;
+						
+						local variant = nil
+						for l, p in pairs(v) do
+							if string.lower(tostring(l)) == "name" then
+								BG.Text = "  " .. tostring(p);
+							end
+							if string.lower(tostring(l)) == "value" then
+								Button.Text = string.gsub(tostring(p.Value), "Enum.KeyCode.", "");
+								variant = p
+							end
+						end
+						
+						local listening
+						Button.MouseButton1Click:Connect(function()
+							changing_keys = true
+							Button.Text = "Press Any Key"
+							listening = UserInput.InputBegan:connect(function(key, chatting)
+								if not chatting then
+									variant.Value = tostring(key.KeyCode)
+									
+									Button.Text = string.gsub(tostring(variant.Value), "Enum.KeyCode.", "");
+									if listening ~= nil then
+										listening:Disconnect()
+										listening = nil
+									end
+								end
+							end)
+						end)
+						
+						Button.MouseLeave:Connect(function()
+							if listening ~= nil then
+								Button.Text = "Press Any Key"
+								Button.Text = string.gsub(tostring(variant.Value), "Enum.KeyCode.", "");
+								if listening ~= nil then
+									listening:Disconnect()
+									listening = nil
+								end
+							end
+						end)
+					end
+					if string.lower(tostring(c)) == string.lower("DropDown") then
+						local Biggest = 50;
+						--aFrame0
+						local Button = TemplateButton:clone();
+						Button.Parent = BG;
+						Button.Text = "Apply"
+						Button.Size = UDim2.new(0, -50, 1, -10);
+						Button.BackgroundColor3 = LightBlue;
+						Button.TextColor3 = White;
+						Button.BorderColor3 = White;
+						local Button2 = TemplateButton:clone();
+						Button2.Parent = BG;
+						Button2.Position = UDim2.new(1, -60, 0, 5);
+						Button2.Size = UDim2.new(0, -130, 1, -10);
+						Button2.BackgroundColor3 = LightBlue;
+						Button2.TextColor3 = White;
+						Button2.BorderColor3 = White;
+
+						local aList;
+						for l, p in pairs(v) do
+							if string.lower(tostring(l)) == "name" then
+								BG.Text = "  " .. tostring(p);
+							end
+							if string.lower(tostring(l)) == "choices" then
+								aList = p;
+								for f, g in pairs(p) do
+									local B = Instance.new("TextLabel")
+									B.Visible = false;
+									B.Parent = Button2;
+									B.Text = tostring(f)
+									if math.floor(B.TextBounds.x) > (Biggest - 30) then
+										Biggest = math.floor(B.TextBounds.x) + 30;
+									end
+									B:Destroy()
+								end
+							end
+							if string.lower(tostring(l)) == "firstchoice" then
+								Button2.Text = tostring(p);
+							end
+						end	
+
+						Button2.MouseButton1Click:connect(function()
+							local Holderp = Instance.new("Frame",aFrame0)
+							Holderp.ZIndex = 3
+							Holderp.Position = (((Button2.Position - UDim2.new(0,0,0,pa.CanvasPosition.Y)) - UDim2.new(0,Biggest + 20,0,5)) +  UDim2.new(0,0,0,BG.Position.Y.Offset + 35 + 30));
+							Holderp.BackgroundTransparency = 1;
+							Holderp.Size = UDim2.new(0,Biggest,0,0);
+
+							local DDHolder = Instance.new("ScrollingFrame",Holderp)
+							DDHolder.ZIndex = 3
+							DDHolder.Position = UDim2.new(0,0,0,5);
+							--DDHolder.Position = (((Button2.Position - UDim2.new(0,0,0,pa.CanvasPosition.Y)) - UDim2.new(0,150,0,5)) +  UDim2.new(0,0,0,BG.Position.Y.Offset + 35 + 30));
+							DDHolder.BackgroundTransparency = 0;
+							DDHolder.BorderSizePixel = 0;
+							DDHolder.BackgroundColor3 = DarkBlue;
+							DDHolder.TopImage = ScrollBarGfx;
+							DDHolder.ScrollBarThickness = 3;
+							DDHolder.MidImage = ScrollBarGfx;
+							DDHolder.BottomImage = ScrollBarGfx;
+							DDHolder.BorderSizePixel = 0
+							pa.Changed:connect(function(property)
+								if property == "CanvasPosition" then
+									Holderp:Destroy()
+								end
+							end)
+							local cid = 0;
+							for k, c in pairs(aList) do
+								local new = Button2:clone()
+								new.Size = UDim2.new(0, -(Biggest), 0, 20);
+								new.Parent = DDHolder;
+								new.Text = tostring(k);
+								new.Position = UDim2.new(1, 0, 0,(20*cid));
+								new.ZIndex = 3;
+								cid = cid + 1;
+
+								new.MouseButton1Click:connect(function()
+									Button2.Text = tostring(k);
+									Holderp:Destroy()
+								end)
+							end
+							if cid <= 4 then
+								DDHolder.Size = UDim2.new(0, Biggest, 0, 20*(cid));
+								DDHolder.CanvasSize = UDim2.new(0, 0, 0, 0);
+							else
+								DDHolder.Size = UDim2.new(0, Biggest, 0, (20*(4)));
+								DDHolder.CanvasSize = UDim2.new(0, 0, 0, 20*(cid));
+							end
+							DDHolder.MouseLeave:connect(function()
+								Holderp:Destroy()
+							end)
+						end)
+						Button2.Changed:connect(function(property)
+							if property == "Text" then
+								pcall(function()
+									aList[Button2.Text]();
+								end)
+							end
+						end)
+						Button.MouseButton1Click:connect(function()
+							pcall(function()
+								aList[Button2.Text]();
+							end)
+						end)
+						Button2.Size = UDim2.new(0, -(Biggest), 1, -10);
+					end
+					if string.lower(tostring(c)) == string.lower("Toggle") then
+						local TheToggleButonLocalToggle = Instance.new("BoolValue")
+						local Button = Instance.new("TextButton",BG);
+						Button.Name = "ToggleButton"
+						Button.Size = UDim2.new(0, 20, 0, 20);
+						Button.Position = UDim2.new(0, 5, 0, 5);
+						Button.BackgroundColor3 = DarkBlue;
+						Button.BorderColor3 = White;
+						Button.ZIndex = 3
+						Button.Text = ""
+						local F1
+						local F2
+						local ToggleSetAs = false
+
+						for l, p in pairs(v) do
+							if string.lower(tostring(l)) == "name" then
+								BG.Text = "        " .. tostring(p);
+							end
+							if string.lower(tostring(l)) == "togglevalue" then
+								if p == true or p == false then
+									ToggleSetAs = p;
+								elseif ((p ~= true or p ~= false) and p ~= nil) then
+									pcall(function()
+										if p ~= nil then
+											if p:IsA("BoolValue") then
+												ToggleSetAs = p.Value;
+												p.Changed:connect(function()
+													TheToggleButonLocalToggle.Value = p.Value
+												end)
+											end
+										end
+									end)
+								end
+							end
+							if string.lower(tostring(l)) == "func1" then
+								F1 = function() p() end
+							end
+							if string.lower(tostring(l)) == "func2" then
+								F2 = function() p() end
+							end
+							if F1 ~= nil and F2 ~= nil and ToggleSetAs ~= nil then
+								TheToggleButonLocalToggle.Changed:connect(function(p)
+									if p == TheToggleButonLocalToggle.Value then
+										if Button ~= nil then
+											if TheToggleButonLocalToggle.Value == true then
+												Button.BackgroundColor3 = LightBlue;
+												pcall(function() F2() end)
+											elseif TheToggleButonLocalToggle.Value == false then
+												Button.BackgroundColor3 = DarkBlue;
+												pcall(function() F1() end)
+											end
+										end
+									end
+								end)
+
+								Button.MouseButton1Click:connect(function()
+									if TheToggleButonLocalToggle.Value == true then
+										TheToggleButonLocalToggle.Value = false;
+									else
+										TheToggleButonLocalToggle.Value = true;
+									end
+								end)
+
+								Button.Changed:connect(function()
+									if TheToggleButonLocalToggle.Value == true then
+										Button.BackgroundColor3 = LightBlue;
+									elseif TheToggleButonLocalToggle.Value == false then
+										Button.BackgroundColor3 = DarkBlue;
+									end
+								end)
+
+								TheToggleButonLocalToggle.Value = ToggleSetAs;
+							end
+						end
+					end
+					Total = Total + 1;
+				end
+			end
+		end
+		pa.CanvasSize = UDim2.new(0,0,0,5+(35*Total));
+	end
+end
+
+RGBPick = ColorPicker(aFrame0);
+RgbBoxes = GetRGBBoxes(RGBPick);
+RedBox = RgbBoxes["Red"];
+GreenBox = RgbBoxes["Green"];
+BlueBox = RgbBoxes["Blue"];
+
+function resetColor(thetable,newcolor)--resetColor(color,newcolor,n)
+	--ExeOnAllKind(RoXploit,"GuiObject",function(obj)
+	--if obj.BackgroundColor3 == color and obj.Name ~= "ColorPickerSquare" then
+	--if n ~= nil then if obj.Name ~= n then return end end
+	local mycolor = LightBlue;
+	if thetable == ObjColorTable2 then
+		mycolor = DarkBlue;
+		DarkBlue = newcolor;
+	else
+		LightBlue = newcolor;
+	end
+	for i=1,#thetable,1 do
+		if thetable[i]~= nil then
+			if thetable[i].BackgroundColor3 ~= mycolor then
+				thetable[i].BackgroundColor3 = newcolor;
+			end
+		end
+	end
+	--obj.BackgroundColor3 = newcolor;
+	--end
+	--end)
+end
+
+function resetColorBorder(newcolor)
+	--ExeOnAllKind(RoXploit,"GuiObject",function(obj)
+	--	if obj.BorderColor3 == color then
+	--		obj.BorderColor3 = newcolor;
+	--	end
+	--end)
+	for i=1,#ObjColorTable3,1 do
+		if ObjColorTable3[i] ~= nil then
+			if ObjColorTable3[i].BorderColor3 ~= White then
+				ObjColorTable3[i].BorderColor3 = newcolor;
+			end
+			if ObjColorTable3[i].Name == "BorderFrame" then
+				if ObjColorTable3[i].BackgroundColor3 ~= White then
+					ObjColorTable3[i].BackgroundColor3 = newcolor;
+				end
+			end
+			White = newcolor;
+		end
+	end
+end
+
+function resetFontColor(newcolor)
+	--ExeOnAllKind(RoXploit,"GuiObject",function(obj)
+	--	if obj.TextColor3 == color then
+	--		obj.TextColor3 = newcolor;
+	--	end
+	--end)
+	for i=1,#ObjColorTable4,1 do
+		if ObjColorTable4[i] ~= nil then
+			if ObjColorTable4[i].TextColor3 ~= White then
+				ObjColorTable4[i].TextColor3 = newcolor;
+				White = newcolor;
+			end
+		end
+	end
+end
+
+function TabSettingsPage()
+	local aSettings2 = EmptyPage("Settings");
+
+	local aFrame9 = Instance.new("Frame",aSettings2);
+	aFrame9.BackgroundColor3 = DarkBlue;
+	aFrame9.Size = UDim2.new(1, -10, 1, -80);
+	aFrame9.BorderColor3 = White;
+	aFrame9.Position = UDim2.new(0, 5, 0, 35);
+
+	local aFrame10 = Instance.new("Frame",aFrame9);
+	aFrame10.Name = "BorderFrame"
+	aFrame10.BorderSizePixel = 0;
+	aFrame10.BackgroundColor3 = White;
+	aFrame10.Size = UDim2.new(0, 1, 1, 0);
+	aFrame10.BorderColor3 = White;
+	aFrame10.Position = UDim2.new(1, -10, 0, 0);
+
+	local sScroller1 = Instance.new("ScrollingFrame",aFrame9);
+	sScroller1.BorderSizePixel = 0;
+	sScroller1.TopImage = ScrollBarGfx;
+	sScroller1.BackgroundColor3 = White;
+	sScroller1.ScrollBarThickness = 9;
+	sScroller1.MidImage = ScrollBarGfx;
+	sScroller1.BottomImage = ScrollBarGfx;
+	sScroller1.Size = UDim2.new(1, 0, 1, 0);
+	sScroller1.BackgroundTransparency = 1;
+
+	sScroller1.Changed:connect(function(property)
+		if property == "CanvasPosition" then
+			RGBPick.Visible = false;
+		end
+	end)
+
+	MakeCommandsButton(sScroller1,FSettings,"");
+
+	local Refresh = Instance.new("TextButton",aSettings2);
+	Refresh.FontSize = Enum.FontSize.Size14;
+	Refresh.ZIndex = 2;
+	Refresh.BorderSizePixel = 0;
+	Refresh.BackgroundColor3 = DarkBlue;
+	Refresh.Size = UDim2.new(0, -140, 0, 25);
+	Refresh.TextColor3 = White;
+	Refresh.Text = "Reset Search";
+	Refresh.Font = Enum.Font.ArialBold;
+	Refresh.BackgroundTransparency = 0.75;
+	Refresh.Position = UDim2.new(1, -225, 0, 5);
+
+	Refresh.MouseButton1Click:connect(function()
+		MakeCommandsButton(sScroller1,FSettings,"");
+	end)
+
+	local aTextBox12 = Instance.new("TextBox",aSettings2);
+	aTextBox12.FontSize = Enum.FontSize.Size14;
+	aTextBox12.BackgroundColor3 = DarkBlue;
+	aTextBox12.ClipsDescendants = true;
+	aTextBox12.Size = UDim2.new(0, -160, 0, 25);
+	aTextBox12.TextColor3 = White;
+	aTextBox12.BorderColor3 = White;
+	aTextBox12.Font = Enum.Font.Arial;
+	aTextBox12.Position = UDim2.new(1, -5, 0, 5);
+	aTextBox12.Text = "";
+
+	aTextBox12.FocusLost:connect(function(Enter)
+		if Enter then
+			MakeCommandsButton(sScroller1,FSettings,aTextBox12.Text);
+			aTextBox12.Text = "";
+		end
+	end)
+
+	local aLabel13 = Instance.new("TextLabel",aSettings2);
+	aLabel13.FontSize = Enum.FontSize.Size14;
+	aLabel13.BackgroundColor3 = White;
+	aLabel13.TextXAlignment = Enum.TextXAlignment.Right;
+	aLabel13.Size = UDim2.new(0, -100, 0, 25);
+	aLabel13.TextColor3 = White;
+	aLabel13.Text = "Search: ";
+	aLabel13.Font = Enum.Font.Arial;
+	aLabel13.BackgroundTransparency = 1;
+	aLabel13.Position = UDim2.new(1, -170, 0, 5);
+	aLabel13.Name = "Label";
+
+	local aLabel3 = Instance.new("TextLabel",aSettings2);
+	aLabel3.FontSize = Enum.FontSize.Size14;
+	aLabel3.BackgroundColor3 = White;
+	aLabel3.TextXAlignment = Enum.TextXAlignment.Left;
+	aLabel3.Size = UDim2.new(1, -20, 0, 10);
+	aLabel3.TextColor3 = White;
+	aLabel3.Text = "Credits:";
+	aLabel3.Font = Enum.Font.ArialBold;
+	aLabel3.BackgroundTransparency = 1;
+	aLabel3.Position = UDim2.new(0, 10, 0, 290);
+	aLabel3.Name = "Label";
+
+	local aLabel4 = Instance.new("TextLabel",aLabel3);
+	aLabel4.FontSize = Enum.FontSize.Size14;
+	aLabel4.BackgroundColor3 = White;
+	aLabel4.TextXAlignment = Enum.TextXAlignment.Left;
+	aLabel4.Size = UDim2.new(1, -40, 0, 10);
+	aLabel4.TextColor3 = White;
+	aLabel4.Text = "KrystalTeam - rLua Coder & UI Designer";
+	aLabel4.Font = Enum.Font.ArialBold;
+	aLabel4.BackgroundTransparency = 1;
+	aLabel4.Position = UDim2.new(0, 10, 0, 15);
+	aLabel4.Name = "Label";
+--[[
+	local aLabel5 = Instance.new("TextLabel",aLabel3);
+	aLabel5.FontSize = Enum.FontSize.Size14;
+	aLabel5.BackgroundColor3 = White;
+	aLabel5.TextXAlignment = Enum.TextXAlignment.Left;
+	aLabel5.Size = UDim2.new(1, -40, 0, 10);
+	aLabel5.TextColor3 = White;
+	aLabel5.Text = "Powered - rLua Coder & PHP Coder";
+	aLabel5.Font = Enum.Font.ArialBold;
+	aLabel5.BackgroundTransparency = 1;
+	aLabel5.Position = UDim2.new(0, 10, 0, 30);
+	aLabel5.Name = "Label";
+
+	local aLabel6 = Instance.new("TextLabel",aLabel3);
+	aLabel6.FontSize = Enum.FontSize.Size14;
+	aLabel6.BackgroundColor3 = White;
+	aLabel6.TextXAlignment = Enum.TextXAlignment.Left;
+	aLabel6.Size = UDim2.new(1, -40, 0, 10);
+	aLabel6.TextColor3 = White;
+	aLabel6.Text = "Mannequin - Gfx Designer";
+	aLabel6.Font = Enum.Font.ArialBold;
+	aLabel6.BackgroundTransparency = 1;
+	aLabel6.Position = UDim2.new(0, 10, 0, 45);
+	aLabel6.Name = "Label";
+
+	local aLabel7 = Instance.new("TextLabel",aLabel3);
+	aLabel7.FontSize = Enum.FontSize.Size14;
+	aLabel7.BackgroundColor3 = White;
+	aLabel7.TextXAlignment = Enum.TextXAlignment.Left;
+	aLabel7.Size = UDim2.new(1, -40, 0, 10);
+	aLabel7.TextColor3 = White;
+	aLabel7.Text = "ProtectiveManEgg - UI Designer";
+	aLabel7.Font = Enum.Font.ArialBold;
+	aLabel7.BackgroundTransparency = 1;
+	aLabel7.Position = UDim2.new(0, 10, 0, 60);
+	aLabel7.Name = "Label";]]
+end
+
+function TabCommandsPage()
+	local aCommands8 = EmptyPage("Commands");
+
+	local aFrame9 = Instance.new("Frame",aCommands8);
+	aFrame9.BackgroundColor3 = DarkBlue;
+	aFrame9.Size = UDim2.new(1, -10, 1, -40);
+	aFrame9.BorderColor3 = White;
+	aFrame9.Position = UDim2.new(0, 5, 0, 35);
+
+	local aFrame10 = Instance.new("Frame",aFrame9);
+	aFrame10.Name = "BorderFrame"
+	aFrame10.BorderSizePixel = 0;
+	aFrame10.BackgroundColor3 = White;
+	aFrame10.Size = UDim2.new(0, 1, 1, 0);
+	aFrame10.BorderColor3 = White;
+	aFrame10.Position = UDim2.new(1, -10, 0, 0);
+
+	aScrollingFrame11 = Instance.new("ScrollingFrame",aFrame9);
+	aScrollingFrame11.BorderSizePixel = 0;
+	aScrollingFrame11.TopImage = ScrollBarGfx;
+	aScrollingFrame11.BackgroundColor3 = White;
+	aScrollingFrame11.ScrollBarThickness = 9;
+	aScrollingFrame11.MidImage = ScrollBarGfx;
+	aScrollingFrame11.BottomImage = ScrollBarGfx;
+	aScrollingFrame11.Size = UDim2.new(1, 0, 1, 0);
+	aScrollingFrame11.BackgroundTransparency = 1;
+
+	aScrollingFrame11.Changed:connect(function(property)
+		if property == "CanvasPosition" then
+			RGBPick.Visible = false;
+		end
+	end)
+
+	MakeCommandsButton(aScrollingFrame11,Functions,"");
+
+	local Refresh = Instance.new("TextButton",aCommands8);
+	Refresh.FontSize = Enum.FontSize.Size14;
+	Refresh.ZIndex = 2;
+	Refresh.BorderSizePixel = 0;
+	Refresh.BackgroundColor3 = DarkBlue;
+	Refresh.Size = UDim2.new(0, -140, 0, 25);
+	Refresh.TextColor3 = White;
+	Refresh.Text = "Reset Search";
+	Refresh.Font = Enum.Font.ArialBold;
+	Refresh.BackgroundTransparency = 0.75;
+	Refresh.Position = UDim2.new(1, -225, 0, 5);
+
+	Refresh.MouseButton1Click:connect(function()
+		MakeCommandsButton(aScrollingFrame11,Functions,"");
+	end)
+
+	local aTextBox12 = Instance.new("TextBox",aCommands8);
+	aTextBox12.FontSize = Enum.FontSize.Size14;
+	aTextBox12.BackgroundColor3 = DarkBlue;
+	aTextBox12.ClipsDescendants = true;
+	aTextBox12.Size = UDim2.new(0, -160, 0, 25);
+	aTextBox12.TextColor3 = White;
+	aTextBox12.BorderColor3 = White;
+	aTextBox12.Font = Enum.Font.Arial;
+	aTextBox12.Position = UDim2.new(1, -5, 0, 5);
+	aTextBox12.Text = "";
+
+	aTextBox12.FocusLost:connect(function(Enter)
+		if Enter then
+			MakeCommandsButton(aScrollingFrame11,Functions,aTextBox12.Text);
+			aTextBox12.Text = "";
+		end
+	end)
+
+	local aLabel13 = Instance.new("TextLabel",aCommands8);
+	aLabel13.FontSize = Enum.FontSize.Size14;
+	aLabel13.BackgroundColor3 = White;
+	aLabel13.TextXAlignment = Enum.TextXAlignment.Right;
+	aLabel13.Size = UDim2.new(0, -100, 0, 25);
+	aLabel13.TextColor3 = White;
+	aLabel13.Text = "Search: ";
+	aLabel13.Font = Enum.Font.Arial;
+	aLabel13.BackgroundTransparency = 1;
+	aLabel13.Position = UDim2.new(1, -170, 0, 5);
+	aLabel13.Name = "Label";
+end
+
+function TabWorkspacePage()
+	local aWS = EmptyPage("Environment");
+
+	local aFrame9 = Instance.new("Frame",aWS);
+	aFrame9.BackgroundColor3 = DarkBlue;
+	aFrame9.Size = UDim2.new(1, -10, 1, -40);
+	aFrame9.BorderColor3 = White;
+	aFrame9.Position = UDim2.new(0, 5, 0, 35);
+
+	local aFrame10 = Instance.new("Frame",aFrame9);
+	aFrame10.Name = "BorderFrame"
+	aFrame10.BorderSizePixel = 0;
+	aFrame10.BackgroundColor3 = White;
+	aFrame10.Size = UDim2.new(0, 1, 1, 0);
+	aFrame10.BorderColor3 = White;
+	aFrame10.Position = UDim2.new(1, -10, 0, 0);
+
+	local WScroller = Instance.new("ScrollingFrame",aFrame9);
+	WScroller.BorderSizePixel = 0;
+	WScroller.TopImage = ScrollBarGfx;
+	WScroller.BackgroundColor3 = White;
+	WScroller.ScrollBarThickness = 9;
+	WScroller.MidImage = ScrollBarGfx;
+	WScroller.BottomImage = ScrollBarGfx;
+	WScroller.Size = UDim2.new(1, 0, 1, 0);
+	WScroller.BackgroundTransparency = 1;
+
+	WScroller.Changed:connect(function(property)
+		if property == "CanvasPosition" then
+			RGBPick.Visible = false;
+		end
+	end)
+
+	MakeCommandsButton(WScroller,WFunctions,"");
+
+	local Refresh = Instance.new("TextButton",aWS);
+	Refresh.FontSize = Enum.FontSize.Size14;
+	Refresh.ZIndex = 2;
+	Refresh.BorderSizePixel = 0;
+	Refresh.BackgroundColor3 = DarkBlue;
+	Refresh.Size = UDim2.new(0, -140, 0, 25);
+	Refresh.TextColor3 = White;
+	Refresh.Text = "Reset Search";
+	Refresh.Font = Enum.Font.ArialBold;
+	Refresh.BackgroundTransparency = 0.75;
+	Refresh.Position = UDim2.new(1, -225, 0, 5);
+
+	Refresh.MouseButton1Click:connect(function()
+		MakeCommandsButton(WScroller,WFunctions,"");
+	end)
+
+	local aTextBox12 = Instance.new("TextBox",aWS);
+	aTextBox12.FontSize = Enum.FontSize.Size14;
+	aTextBox12.BackgroundColor3 = DarkBlue;
+	aTextBox12.ClipsDescendants = true;
+	aTextBox12.Size = UDim2.new(0, -160, 0, 25);
+	aTextBox12.TextColor3 = White;
+	aTextBox12.BorderColor3 = White;
+	aTextBox12.Font = Enum.Font.Arial;
+	aTextBox12.Position = UDim2.new(1, -5, 0, 5);
+	aTextBox12.Text = "";
+
+	aTextBox12.FocusLost:connect(function(Enter)
+		if Enter then
+			MakeCommandsButton(WScroller,WFunctions,aTextBox12.Text);
+			aTextBox12.Text = "";
+		end
+	end)
+
+	local aLabel13 = Instance.new("TextLabel",aWS);
+	aLabel13.FontSize = Enum.FontSize.Size14;
+	aLabel13.BackgroundColor3 = White;
+	aLabel13.TextXAlignment = Enum.TextXAlignment.Right;
+	aLabel13.Size = UDim2.new(0, -100, 0, 25);
+	aLabel13.TextColor3 = White;
+	aLabel13.Text = "Search: ";
+	aLabel13.Font = Enum.Font.Arial;
+	aLabel13.BackgroundTransparency = 1;
+	aLabel13.Position = UDim2.new(1, -170, 0, 5);
+	aLabel13.Name = "Label";
+end
+
+function TabEspPage()
+	local aESP = EmptyPage("ESP");
+
+	local aFrame9 = Instance.new("Frame",aESP);
+	aFrame9.BackgroundColor3 = DarkBlue;
+	aFrame9.Size = UDim2.new(1, -10, 1, -40);
+	aFrame9.BorderColor3 = White;
+	aFrame9.Position = UDim2.new(0, 5, 0, 35);
+
+	local aFrame10 = Instance.new("Frame",aFrame9);
+	aFrame10.Name = "BorderFrame"
+	aFrame10.BorderSizePixel = 0;
+	aFrame10.BackgroundColor3 = White;
+	aFrame10.Size = UDim2.new(0, 1, 1, 0);
+	aFrame10.BorderColor3 = White;
+	aFrame10.Position = UDim2.new(1, -10, 0, 0);
+
+	local EScroller = Instance.new("ScrollingFrame",aFrame9);
+	EScroller.BorderSizePixel = 0;
+	EScroller.TopImage = ScrollBarGfx;
+	EScroller.BackgroundColor3 = White;
+	EScroller.ScrollBarThickness = 9;
+	EScroller.MidImage = ScrollBarGfx;
+	EScroller.BottomImage = ScrollBarGfx;
+	EScroller.Size = UDim2.new(1, 0, 1, 0);
+	EScroller.BackgroundTransparency = 1;
+
+	EScroller.Changed:connect(function(property)
+		if property == "CanvasPosition" then
+			RGBPick.Visible = false;
+		end
+	end)
+
+	MakeCommandsButton(EScroller,EFunctions,"");
+
+	local Refresh = Instance.new("TextButton",aESP);
+	Refresh.FontSize = Enum.FontSize.Size14;
+	Refresh.ZIndex = 2;
+	Refresh.BorderSizePixel = 0;
+	Refresh.BackgroundColor3 = DarkBlue;
+	Refresh.Size = UDim2.new(0, -140, 0, 25);
+	Refresh.TextColor3 = White;
+	Refresh.Text = "Reset Search";
+	Refresh.Font = Enum.Font.ArialBold;
+	Refresh.BackgroundTransparency = 0.75;
+	Refresh.Position = UDim2.new(1, -225, 0, 5);
+
+	Refresh.MouseButton1Click:connect(function()
+		MakeCommandsButton(EScroller,EFunctions,"");
+	end)
+
+	local aTextBox12 = Instance.new("TextBox",aESP);
+	aTextBox12.FontSize = Enum.FontSize.Size14;
+	aTextBox12.BackgroundColor3 = DarkBlue;
+	aTextBox12.ClipsDescendants = true;
+	aTextBox12.Size = UDim2.new(0, -160, 0, 25);
+	aTextBox12.TextColor3 = White;
+	aTextBox12.BorderColor3 = White;
+	aTextBox12.Font = Enum.Font.Arial;
+	aTextBox12.Position = UDim2.new(1, -5, 0, 5);
+	aTextBox12.Text = "";
+
+	aTextBox12.FocusLost:connect(function(Enter)
+		if Enter then
+			MakeCommandsButton(EScroller,EFunctions,aTextBox12.Text);
+			aTextBox12.Text = "";
+		end
+	end)
+
+	local aLabel13 = Instance.new("TextLabel",aESP);
+	aLabel13.FontSize = Enum.FontSize.Size14;
+	aLabel13.BackgroundColor3 = White;
+	aLabel13.TextXAlignment = Enum.TextXAlignment.Right;
+	aLabel13.Size = UDim2.new(0, -100, 0, 25);
+	aLabel13.TextColor3 = White;
+	aLabel13.Text = "Search: ";
+	aLabel13.Font = Enum.Font.Arial;
+	aLabel13.BackgroundTransparency = 1;
+	aLabel13.Position = UDim2.new(1, -170, 0, 5);
+	aLabel13.Name = "Label";
+end
+
+function TabLocalPage()
+	local aLocal = EmptyPage("Local Commands");
+
+	local aFrame9 = Instance.new("Frame",aLocal);
+	aFrame9.BackgroundColor3 = DarkBlue;
+	aFrame9.Size = UDim2.new(1, -10, 1, -40);
+	aFrame9.BorderColor3 = White;
+	aFrame9.Position = UDim2.new(0, 5, 0, 35);
+
+	local aFrame10 = Instance.new("Frame",aFrame9);
+	aFrame10.Name = "BorderFrame"
+	aFrame10.BorderSizePixel = 0;
+	aFrame10.BackgroundColor3 = White;
+	aFrame10.Size = UDim2.new(0, 1, 1, 0);
+	aFrame10.BorderColor3 = White;
+	aFrame10.Position = UDim2.new(1, -10, 0, 0);
+
+	local LScroller = Instance.new("ScrollingFrame",aFrame9);
+	LScroller.BorderSizePixel = 0;
+	LScroller.TopImage = ScrollBarGfx;
+	LScroller.BackgroundColor3 = White;
+	LScroller.ScrollBarThickness = 9;
+	LScroller.MidImage = ScrollBarGfx;
+	LScroller.BottomImage = ScrollBarGfx;
+	LScroller.Size = UDim2.new(1, 0, 1, 0);
+	LScroller.BackgroundTransparency = 1;
+
+	LScroller.Changed:connect(function(property)
+		if property == "CanvasPosition" then
+			RGBPick.Visible = false;
+		end
+	end)
+
+	MakeCommandsButton(LScroller,LFunctions,"");
+
+	local Refresh = Instance.new("TextButton",aLocal);
+	Refresh.FontSize = Enum.FontSize.Size14;
+	Refresh.ZIndex = 2;
+	Refresh.BorderSizePixel = 0;
+	Refresh.BackgroundColor3 = DarkBlue;
+	Refresh.Size = UDim2.new(0, -140, 0, 25);
+	Refresh.TextColor3 = White;
+	Refresh.Text = "Reset Search";
+	Refresh.Font = Enum.Font.ArialBold;
+	Refresh.BackgroundTransparency = 0.75;
+	Refresh.Position = UDim2.new(1, -225, 0, 5);
+
+	Refresh.MouseButton1Click:connect(function()
+		MakeCommandsButton(LScroller,LFunctions,"");
+	end)
+
+	local aTextBox12 = Instance.new("TextBox",aLocal);
+	aTextBox12.FontSize = Enum.FontSize.Size14;
+	aTextBox12.BackgroundColor3 = DarkBlue;
+	aTextBox12.ClipsDescendants = true;
+	aTextBox12.Size = UDim2.new(0, -160, 0, 25);
+	aTextBox12.TextColor3 = White;
+	aTextBox12.BorderColor3 = White;
+	aTextBox12.Font = Enum.Font.Arial;
+	aTextBox12.Position = UDim2.new(1, -5, 0, 5);
+	aTextBox12.Text = "";
+
+	aTextBox12.FocusLost:connect(function(Enter)
+		if Enter then
+			MakeCommandsButton(LScroller,LFunctions,aTextBox12.Text);
+			aTextBox12.Text = "";
+		end
+	end)
+
+	local aLabel13 = Instance.new("TextLabel",aLocal);
+	aLabel13.FontSize = Enum.FontSize.Size14;
+	aLabel13.BackgroundColor3 = White;
+	aLabel13.TextXAlignment = Enum.TextXAlignment.Right;
+	aLabel13.Size = UDim2.new(0, -100, 0, 25);
+	aLabel13.TextColor3 = White;
+	aLabel13.Text = "Search: ";
+	aLabel13.Font = Enum.Font.Arial;
+	aLabel13.BackgroundTransparency = 1;
+	aLabel13.Position = UDim2.new(1, -170, 0, 5);
+	aLabel13.Name = "Label";
+end
+
+function TabSDPage()
+	local aSDestruction = EmptyPage("Server Destruction");
+
+	local aFrame9 = Instance.new("Frame",aSDestruction);
+	aFrame9.BackgroundColor3 = DarkBlue;
+	aFrame9.Size = UDim2.new(1, -10, 1, -40);
+	aFrame9.BorderColor3 = White;
+	aFrame9.Position = UDim2.new(0, 5, 0, 35);
+
+	local aFrame10 = Instance.new("Frame",aFrame9);
+	aFrame10.Name = "BorderFrame"
+	aFrame10.BorderSizePixel = 0;
+	aFrame10.BackgroundColor3 = White;
+	aFrame10.Size = UDim2.new(0, 1, 1, 0);
+	aFrame10.BorderColor3 = White;
+	aFrame10.Position = UDim2.new(1, -10, 0, 0);
+
+	local SDScroller = Instance.new("ScrollingFrame",aFrame9);
+	SDScroller.BorderSizePixel = 0;
+	SDScroller.TopImage = ScrollBarGfx;
+	SDScroller.BackgroundColor3 = White;
+	SDScroller.ScrollBarThickness = 9;
+	SDScroller.MidImage = ScrollBarGfx;
+	SDScroller.BottomImage = ScrollBarGfx;
+	SDScroller.Size = UDim2.new(1, 0, 1, 0);
+	SDScroller.BackgroundTransparency = 1;
+
+	SDScroller.Changed:connect(function(property)
+		if property == "CanvasPosition" then
+			RGBPick.Visible = false;
+		end
+	end)
+
+	MakeCommandsButton(SDScroller,SDFunctions,"");
+
+	local Refresh = Instance.new("TextButton",aSDestruction);
+	Refresh.FontSize = Enum.FontSize.Size14;
+	Refresh.ZIndex = 2;
+	Refresh.BorderSizePixel = 0;
+	Refresh.BackgroundColor3 = DarkBlue;
+	Refresh.Size = UDim2.new(0, -140, 0, 25);
+	Refresh.TextColor3 = White;
+	Refresh.Text = "Reset Search";
+	Refresh.Font = Enum.Font.ArialBold;
+	Refresh.BackgroundTransparency = 0.75;
+	Refresh.Position = UDim2.new(1, -225, 0, 5);
+
+	Refresh.MouseButton1Click:connect(function()
+		MakeCommandsButton(SDScroller,SDFunctions,"");
+	end)
+
+	local aTextBox12 = Instance.new("TextBox",aSDestruction);
+	aTextBox12.FontSize = Enum.FontSize.Size14;
+	aTextBox12.BackgroundColor3 = DarkBlue;
+	aTextBox12.ClipsDescendants = true;
+	aTextBox12.Size = UDim2.new(0, -160, 0, 25);
+	aTextBox12.TextColor3 = White;
+	aTextBox12.BorderColor3 = White;
+	aTextBox12.Font = Enum.Font.Arial;
+	aTextBox12.Position = UDim2.new(1, -5, 0, 5);
+	aTextBox12.Text = "";
+
+	aTextBox12.FocusLost:connect(function(Enter)
+		if Enter then
+			MakeCommandsButton(SDScroller,SDFunctions,aTextBox12.Text);
+			aTextBox12.Text = "";
+		end
+	end)
+
+	local aLabel13 = Instance.new("TextLabel",aSDestruction);
+	aLabel13.FontSize = Enum.FontSize.Size14;
+	aLabel13.BackgroundColor3 = White;
+	aLabel13.TextXAlignment = Enum.TextXAlignment.Right;
+	aLabel13.Size = UDim2.new(0, -100, 0, 25);
+	aLabel13.TextColor3 = White;
+	aLabel13.Text = "Search: ";
+	aLabel13.Font = Enum.Font.Arial;
+	aLabel13.BackgroundTransparency = 1;
+	aLabel13.Position = UDim2.new(1, -170, 0, 5);
+	aLabel13.Name = "Label";
+end
+
+function WapPointsPage()
+	local wLocal = EmptyPage("WayPoints");
+
+	local aFrame9 = Instance.new("Frame",wLocal);
+	aFrame9.BackgroundColor3 = DarkBlue;
+	aFrame9.Size = UDim2.new(1, -10, 1, -40);
+	aFrame9.BorderColor3 = White;
+	aFrame9.Position = UDim2.new(0, 5, 0, 35);
+
+	local aFrame10 = Instance.new("Frame",aFrame9);
+	aFrame10.Name = "BorderFrame"
+	aFrame10.BorderSizePixel = 0;
+	aFrame10.BackgroundColor3 = White;
+	aFrame10.Size = UDim2.new(0, 1, 1, 0);
+	aFrame10.BorderColor3 = White;
+	aFrame10.Position = UDim2.new(1, -10, 0, 0);
+
+	local WPScroller = Instance.new("ScrollingFrame",aFrame9);
+	WPScroller.BorderSizePixel = 0;
+	WPScroller.TopImage = ScrollBarGfx;
+	WPScroller.BackgroundColor3 = White;
+	WPScroller.ScrollBarThickness = 9;
+	WPScroller.MidImage = ScrollBarGfx;
+	WPScroller.BottomImage = ScrollBarGfx;
+	WPScroller.Size = UDim2.new(1, 0, 1, 0);
+	WPScroller.BackgroundTransparency = 1;
+	WPScroller.CanvasSize = UDim2.new(0,0,0,0)
+
+	WPScroller.Changed:connect(function(property)
+		if property == "CanvasPosition" then
+			RGBPick.Visible = false;
+		end
+	end)
+
+	local Refresh = Instance.new("TextButton",wLocal);
+	Refresh.FontSize = Enum.FontSize.Size14;
+	Refresh.ZIndex = 2;
+	Refresh.BorderSizePixel = 0;
+	Refresh.BackgroundColor3 = DarkBlue;
+	Refresh.Size = UDim2.new(0, -140, 0, 25);
+	Refresh.TextColor3 = White;
+	Refresh.Text = "Reset Search";
+	Refresh.Font = Enum.Font.ArialBold;
+	Refresh.BackgroundTransparency = 0.75;
+	Refresh.Position = UDim2.new(1, -225, 0, 5);
+
+	Refresh.MouseButton1Click:connect(function()
+
+	end)
+
+	local aTextBox12 = Instance.new("TextBox",wLocal);
+	aTextBox12.FontSize = Enum.FontSize.Size14;
+	aTextBox12.BackgroundColor3 = DarkBlue;
+	aTextBox12.ClipsDescendants = true;
+	aTextBox12.Size = UDim2.new(0, -160, 0, 25);
+	aTextBox12.TextColor3 = White;
+	aTextBox12.BorderColor3 = White;
+	aTextBox12.Font = Enum.Font.Arial;
+	aTextBox12.Position = UDim2.new(1, -5, 0, 5);
+	aTextBox12.Text = "";
+
+	aTextBox12.FocusLost:connect(function(Enter)
+		if Enter then
+
+			aTextBox12.Text = "";
+		end
+	end)
+
+	local aLabel13 = Instance.new("TextLabel",wLocal);
+	aLabel13.FontSize = Enum.FontSize.Size14;
+	aLabel13.BackgroundColor3 = White;
+	aLabel13.TextXAlignment = Enum.TextXAlignment.Right;
+	aLabel13.Size = UDim2.new(0, -100, 0, 25);
+	aLabel13.TextColor3 = White;
+	aLabel13.Text = "Search: ";
+	aLabel13.Font = Enum.Font.Arial;
+	aLabel13.BackgroundTransparency = 1;
+	aLabel13.Position = UDim2.new(1, -170, 0, 5);
+	aLabel13.Name = "Label";
+end
+
+
+function TabPage()
+	local ID = 0;
+	ID = #aTabPageHolder17:GetChildren() + 1;
+
+	local CreatePage = Instance.new("Frame", aTabPageHolder17);
+	CreatePage.ZIndex = 2;
+	CreatePage.BorderSizePixel = 0;
+	CreatePage.BackgroundColor3 = LightBlue;
+	CreatePage.Size = UDim2.new(1, 0, 1, 0);
+	CreatePage.BorderColor3 = White;
+	CreatePage.BackgroundTransparency = 1;
+	CreatePage.Name = "Page"..ID;
+	return CreatePage;
+end
+
+function AutoTab()
+	local ID,TabID = 0,0;
+	ID = #aTabPageHolder17:GetChildren();
+
+	local TheTabPage = nil
+	if ID <= 0 then
+		TheTabPage = TabPage();
+	elseif ID ~= 0 then
+		if aTabPageHolder17:FindFirstChild("Page"..ID) ~= nil then
+			TabID = #aTabPageHolder17:FindFirstChild("Page"..ID):GetChildren() + 1;
+			if TabID > 6 then -- used to be 5
+				TheTabPage = TabPage();
+			else
+				TheTabPage = aTabPageHolder17:FindFirstChild("Page"..ID);
+			end
+		end
+	end
+	return TheTabPage;
+end
+
+function RefreshButtonTab(NewTab)
+	for k,c in pairs(aTabPageHolder17:GetChildren()) do
+		for i,v in pairs(c:GetChildren()) do
+			if v ~= NewTab then
+				v.Transparency = 0.5
+				--StartToEnd(v,0,0.5,0.1,function(me,t) if me.Transparency ~= 0.5 and me ~= NewTab then me.Transparency = 0 + t; end end)
+			else
+				v.Transparency = 0
+				--StartToEnd(v,0,0.5,0.1,function(me,t) if me.Transparency ~= 0 then me.Transparency = 0.5 - t; end end)
+			end
+		end
+	end
+	for k,c in pairs(aTabHolder14:GetChildren()) do
+		if c.Name == "Settings" or c.Name == "Player Selection" then
+			if c ~= NewTab then
+				c.Transparency = 0.5
+				--StartToEnd(c,0,0.5,0.1,function(me,t) if me.Transparency ~= 0.5 and me ~= NewTab then me.Transparency = 0 + t; end end)
+			else
+				c.Transparency = 0
+				--StartToEnd(c,0,0.5,0.1,function(me,t) if me.Transparency ~= 0 then me.Transparency = 0.5 - t; end end)
+			end
+		end
+	end
+end
+
+function PageFunctionallity(NewTab)
+	NewTab.MouseButton1Click:connect(function()
+		local PageName = NewTab.Text
+		local Page = aPageHolder1:FindFirstChild(PageName)
+		if Page ~= nil then
+			for i,v in pairs(aPageHolder1:GetChildren()) do
+				if v.Name ~= PageName then
+					v:TweenPosition(UDim2.new(1,0,0,0),"Out","Quad",0.25,true);
+					v.Visible = false;
+				else
+					v.Visible = true;
+					v:TweenPosition(UDim2.new(0,0,0,0),"Out","Quad",0.25,true);
+				end
+			end
+			RefreshButtonTab(NewTab);
+		end
+	end)
+end
+
+function MakeTab(Name)
+	local TheTab = AutoTab();
+	local TabAmount = #TheTab:GetChildren()
+	local NewPos = ( 5 + ( 40*( TabAmount ) ) );
+	local NewTab = Instance.new("TextButton",TheTab);
+	NewTab.FontSize = Enum.FontSize.Size14;
+	NewTab.ZIndex = 2;
+	NewTab.BorderSizePixel = 0;
+	NewTab.BackgroundColor3 = LightBlue;
+	NewTab.Size = UDim2.new(1, 0, 0, 35);
+	NewTab.TextColor3 = White;
+	NewTab.Text = Name;
+	NewTab.Font = Enum.Font.ArialBold;
+	NewTab.Transparency = 0.5;
+	NewTab.Position = UDim2.new(0, 0, 0, NewPos);
+	NewTab.Name = "Page"..(TabAmount+1);
+	if NewTab.Name == "Page1" and TheTab.Name == "Page1" then
+		NewTab.Transparency = 0;
+		for i,v in pairs(aPageHolder1:GetChildren()) do
+			if v.Name ~= Name then
+				v:TweenPosition(UDim2.new(1,0,0,0),"Out","Quad",0.25,true);
+				v.Visible = false;
+			else
+				v.Visible = true;
+				v:TweenPosition(UDim2.new(0,0,0,0),"Out","Quad",0.25,true);
+			end
+		end
+	end
+
+	PageFunctionallity(NewTab);
+
+	return NewTab;
+end
+
+TabCommandsPage()
+TabLocalPage()
+TabEspPage()
+TabWorkspacePage()
+TabSDPage()
+--WapPointsPage()
+
+TabSettingsPage()
+
+TabPlayerSelectionPage()
+
+TabBanDataPage()
+
+for i,v in pairs(aPageHolder1:GetChildren()) do
+	local blacklist = {"Settings", "Player Selection", "RGBHolder", "BannedPlayers"}
+	if table.find(blacklist, v.Name) then
+		--Not for those tabs
+	else
+		MakeTab(v.Name);
+	end
+end
+
+for k,c in pairs(aTabHolder14:GetChildren()) do
+	local blacklist = {"Settings", "Player Selection"}
+	if table.find(blacklist, c.Name) then
+		PageFunctionallity(c);
+	end
+end
+--[[
+function TabPageButton(Page)
+	local ID = 0;
+	ID = #aTabPageButtonHolder24:GetChildren() + 1;
+
+	local TabPageButton = Instance.new("TextButton",aTabPageButtonHolder24);
+	TabPageButton.FontSize = Enum.FontSize.Size14;
+	TabPageButton.ZIndex = 2;
+	TabPageButton.BorderSizePixel = 0;
+	TabPageButton.BackgroundColor3 = LightBlue;
+	TabPageButton.Position = UDim2.new(0, 20*(ID-1), 0, 0);
+	TabPageButton.Size = UDim2.new(0, 20, 0, 20);
+	TabPageButton.TextColor3 = White;
+	TabPageButton.Text = ID;
+	TabPageButton.Font = Enum.Font.ArialBold;
+	TabPageButton.BackgroundTransparency = 0.5;
+	TabPageButton.Transparency = 0.5;
+	TabPageButton.Name = "Page"..ID;
+
+	if TabPageButton.Name == "Page1" then
+		TabPageButton.Transparency = 0;
+		for i,v in pairs(aTabPageHolder17:GetChildren()) do
+			if v.Name ~= "Page1" then
+				v:TweenPosition(UDim2.new(0,-140,0,0),"Out","Quad",0.25,true);
+			else
+				v:TweenPosition(UDim2.new(0,0,0,0),"Out","Quad",0.25,true);
+			end
+		end
+	end
+
+	TabPageButton.MouseButton1Click:connect(function()
+		for i,v in pairs(aTabPageHolder17:GetChildren()) do
+			if v.Name ~= Page then
+				v:TweenPosition(UDim2.new(0,-140,0,0),"Out","Quad",0.25,true);
+				--v.Visible = false;
+			else
+				v:TweenPosition(UDim2.new(0,0,0,0),"Out","Quad",0.25,true);
+				--v.Visible = true;
+			end
+		end
+		for i,v in pairs(aTabPageButtonHolder24:GetChildren()) do
+			if v ~= TabPageButton then
+				v.Transparency = 0.5;
+			else
+				v.Transparency = 0;
+			end
+		end
+		TabPageButton.Transparency = 0;
+	end)
+
+	return TabPageButton;
+end
+
+
+function SetTabPageButtons()
+	for i,v in pairs(aTabPageHolder17:GetChildren()) do
+		TabPageButton(v.Name)
+	end
+end
+
+SetTabPageButtons()
+
+local GlobalId = 1;
+function MoveTabPageButtons()
+	local Total = #aTabPageButtonHolder24:GetChildren()
+	if GlobalId > Total then
+		GlobalId = 1;
+	elseif GlobalId < 1 then
+		GlobalId = Total;
+	end
+	for i,v in pairs(aTabPageButtonHolder24:GetChildren()) do
+		local Id = v.Text
+		if tonumber(v.Text) == GlobalId then
+			v.Position = UDim2.new(0,0,0,0);
+		elseif tonumber(v.Text) == (GlobalId + 1) or tonumber(v.Text) == ((GlobalId + 1) - Total) then
+			v.Position = UDim2.new(0,20,0,0);
+		elseif tonumber(v.Text) == (GlobalId + 2) or tonumber(v.Text) == ((GlobalId + 2) - Total) then
+			v.Position = UDim2.new(0,40,0,0);
+		elseif tonumber(v.Text) == (GlobalId + 3) or tonumber(v.Text) == ((GlobalId + 3) - Total) then
+			v.Position = UDim2.new(0,60,0,0);
+		elseif tonumber(v.Text) == (GlobalId + 4) or tonumber(v.Text) == ((GlobalId + 4) - Total) then
+			v.Position = UDim2.new(0,80,0,0);
+		else
+			v.Position = UDim2.new(0,-20,0,0);
+		end
+	end
+end
+--thinking
+
+aLeftArrow22.MouseButton1Click:connect(function()
+	GlobalId = GlobalId - 1;
+	MoveTabPageButtons();
+end)
+
+aRightArrow23.MouseButton1Click:connect(function()
+	GlobalId = GlobalId + 1;
+	MoveTabPageButtons();
+end)
+]]
+
+function SetXray(obj, value)
+	local newvalue = value == true and 0.75 or 0
+	if obj:IsA("BasePart") then
+		obj.LocalTransparencyModifier = newvalue
+	end
+	for i, o in obj:GetDescendants() do
+		if o:IsA("BasePart") then
+			o.LocalTransparencyModifier = newvalue
+		end
+	end
+	
+	for id, plr in Players:GetPlayers() do
+		for i, o in plr.Character:GetDescendants() do
+			if o:IsA("BasePart") then
+				o.LocalTransparencyModifier = 0
+			end
+		end
+	end
+end
+
+local XrayEvent = nil
+UserInput.InputBegan:connect(function(key, chatting)
+	if changing_keys then 
+		changing_keys = false
+		return 
+	end
+	
+	if not chatting then
+		if NoClipUseHotkey == true then
+			if key.KeyCode == Enum.KeyCode[string.gsub(NoClipToggleKey.Value, "Enum.KeyCode.", "")] then
+				NoClip.Value = not NoClip.Value;
+			end
+		end
+		if XRayUseHotkey == true then
+			if key.KeyCode == Enum.KeyCode[string.gsub(XRayToggleKey.Value, "Enum.KeyCode.", "")] then
+				XRay.Value = not XRay.Value;
+			end
+		end
+		if Teleport.Value == true then
+			if key.KeyCode == Enum.KeyCode[string.gsub(TeleportToggleKey.Value, "Enum.KeyCode.", "")] then
+				local Mouse = LocalPlayer:GetMouse()
+				local MouseHit = Mouse.Hit.Position
+				
+				if LocalPlayer.Character ~= nil then
+					local Humanoid : Humanoid = LocalPlayer.Character:FindFirstChildOfClass("Humanoid")
+					if Humanoid ~= nil then
+						LocalPlayer.Character:MoveTo(MouseHit)
+					end
+				end
+			end
+		end
+	end
+end)
+
+XRay.Changed:Connect(function(prop)
+	SetXray(workspace, XRay.Value)
+	if XRay.Value == true then
+		XrayEvent = workspace.DescendantAdded:Connect(function(obj)
+			SetXray(obj, true)
+		end)
+	else
+		if XrayEvent ~= nil then
+			XrayEvent:Disconnect()
+			XrayEvent = nil
+		end
+	end
+end)
+--[[
+SetHotkey(Enum.KeyCode.Space,function()
+	if InfJump == true then
+		if LocalPlayer ~= nil then
+			if LocalPlayer.Character ~= nil then
+				if LocalPlayer.Character:FindFirstChild("Humanoid") ~= nil then
+					LocalPlayer.Character:FindFirstChild("Humanoid").Sit = true;
+					LocalPlayer.Character:FindFirstChild("Humanoid").Jump = true;
+				end
+			end
+		end
+	end
+end)]]
+
+--Set Pages
+
+RefreshPlayerList(plastsearch)
+
+--Loop
+--[[
+	local Settings.BanEnabled = true;
+	local Settings.BanGuests = false;
+	local Settings.BanOwner = false;
+--]]
+spawn(function()--Ban
+	while wait() do
+		if Settings.BanEnabled == true then
+			for l,player in pairs(game.Players:GetChildren()) do
+				for i,v in pairs(BanFolder:GetChildren()) do
+					if player.Name == v.Name then
+						player:Destroy();
+					end
+				end 
+				if Settings.BanOwner == true and player ~= LocalPlayer then
+					if player.userId == game.CreatorId then
+						player:Destroy();
+					end
+				end
+			end
+		end
+	end
+end)
+
+spawn(function()--Old NoClip
+	game:GetService('RunService').Stepped:connect(function()
+		pcall(function() 
+			if (NoClip.Value == true) then
+				if LocalPlayer ~= nil then
+					if LocalPlayer.Character ~= nil then
+						ExeOnAllKind(LocalPlayer.Character, "BasePart", function(p) p.CanCollide = false; end)
+					end
+				end
+			end
+		end)
+	end)
+end)
+
+local TacoMesh = Instance.new("SpecialMesh")
+TacoMesh.MeshType = Enum.MeshType.FileMesh
+TacoMesh.Scale = Vector3.new(3,3,3)
+TacoMesh.MeshId = "rbxassetid://14846869"
+TacoMesh.TextureId = "rbxassetid://14846834"
+spawn(function()
+	game:service("RunService").Stepped:connect(function()
+		if RainTaco == true then
+			pcall(function()
+				local cPos;
+				if LocalPlayer ~= nil then
+					if LocalPlayer.Character ~= nil then
+						cPos = LocalPlayer.Character:GetModelCFrame();
+					else
+						cPos = CFrame.new(0,0,0);
+					end
+				else
+					cPos = CFrame.new(0,0,0);
+				end
+				if cPos ~= nil then
+					local DropTaco = Instance.new("Part");
+					DropTaco.CanCollide = false;
+					DropTaco.RotVelocity = Vector3.new(math.random()*math.pi,math.random()*math.pi,math.random()*math.pi);
+					local TacoMeshClone = TacoMesh:clone();
+					TacoMeshClone.Parent = DropTaco;
+					TacoMeshClone.Scale = Vector3.new(math.random()*20,math.random()*20,math.random()*20);
+					DropTaco.CFrame = cPos * CFrame.new(math.random()*500 - 250,math.random(100,200),math.random()*500 - 250);
+					DropTaco.Parent = Workspace;
+					game:GetService("Debris"):AddItem(DropTaco,4);
+				end
+			end)
+		end 
+	end)
+end)
+
+----Color Settings
+function findtableobject(atable,obj)
+	for i=1,#atable do
+		if atable[i] == obj then
+			return true
+		end		
+	end
+	return false
+end
+
+function SetColorOBJ(p)
+	ExeOnAllKind(p,"GuiObject",function(obj)
+		if obj.BackgroundColor3 == LightBlue and obj.Name ~= "ColorPickerSquare" then
+			if obj.Name ~= "BorderFrame" then
+				if not findtableobject(ObjColorTable1,obj) then
+					table.insert(ObjColorTable1,obj);
+				end
+			end
+		end
+	end)
+
+	ExeOnAllKind(p,"GuiObject",function(obj)
+		if obj.BackgroundColor3 == DarkBlue and obj.Name ~= "ColorPickerSquare" then
+			if obj.Name ~= "BorderFrame" then
+				if not findtableobject(ObjColorTable2,obj) then
+					table.insert(ObjColorTable2,obj);
+				end
+			end
+		end
+	end)
+
+	ExeOnAllKind(p,"GuiObject",function(obj)
+		if obj.BorderColor3 == White and obj.Name ~= "BorderFrame" then
+			if obj.Name ~= "BorderFrame" then
+				if not findtableobject(ObjColorTable3,obj) then
+					table.insert(ObjColorTable3,obj);
+				end
+			end
+		elseif obj.Name == "BorderFrame" then		
+			if not findtableobject(ObjColorTable3,obj) then
+				table.insert(ObjColorTable3,obj);
+			end
+		end
+	end)
+
+	ExeOnAllKind(p,"GuiObject",function(obj)
+		if obj.TextColor3 == White and obj.Name ~= "ColorPickerSquare" then
+			if obj.Name ~= "BorderFrame" then
+				if not findtableobject(ObjColorTable4,obj) then
+					table.insert(ObjColorTable4,obj);
+				end
+			end
+		end
+	end)
+
+	resetColor(ObjColorTable1,LightBlue)
+	resetColor(ObjColorTable2,DarkBlue)
+	resetFontColor(White)
+	resetColorBorder(White)
+end
+
+ExeOnAllKind(RoXploit,"GuiObject",function(obj)
+	obj.ChildAdded:connect(function(a)
+		SetColorOBJ(obj)
+	end)
+	obj.ChildRemoved:connect(function(a)
+		SetColorOBJ(obj)
+	end)
+end)
+
+SetColorOBJ(RoXploit)
+
+--[[
+	GUI TO SCRIPT, By: KrystalTeam
+--]]
+
+local Camera = Workspace.CurrentCamera
+local W2S = function(Coordinate) -- Vector3 Coordinate
+	Camera = Workspace.CurrentCamera
+	if Camera ~= nil then
+		return Camera:WorldToViewportPoint(Coordinate)
+	end
+end
+
+function DrawLine(Start, End, Width, Color)
+	local Start_O, End_O = Start, End
+	if (Start.X > End.X) then
+		End = Start_O
+		Start = End_O
+	end
+	local Line = Instance.new("Frame");
+	local XSize = (End-Start).magnitude;
+	local XDistance = (End.X-Start.X);
+	local YDistance = (End.Y-Start.Y);
+	local DesiredAngle = math.atan2(YDistance,XDistance);
+	local YPositionOffset = YDistance/2;
+	local XOffset = (1 - math.cos(DesiredAngle)) * (XSize/2)
+
+	Line.Rotation = math.deg(DesiredAngle);
+	Line.BorderSizePixel = 0;
+	Line.Size = UDim2.new(0,XSize,0,Width);
+	Line.Position = UDim2.new(0,Start.X-XOffset,0,Start.Y + YPositionOffset);
+	Line.BackgroundColor3 = Color;
+	return Line;
+end
+
+function Draw2DEspBox(Target, Color)
+	local par = Instance.new("Frame",FullScreen);
+	par.Size = UDim2.new(1,0,1,0)
+	par.Transparency = 1
+
+	local SX = Target.X-(170/(Target.Z/10))
+	local SY = Target.Y-(170/(Target.Z/10))
+	local EX = Target.X+(170/(Target.Z/10))
+	local EY = Target.Y+(250/(Target.Z/10))
+	DrawLine(Vector2.new(SX,SY),Vector2.new(EX,SY),2, Color).Parent = par;
+	DrawLine(Vector2.new(SX,SY),Vector2.new(SX,EY),2, Color).Parent = par;
+	DrawLine(Vector2.new(EX,SY),Vector2.new(EX,EY),2, Color).Parent = par;
+	DrawLine(Vector2.new(SX,EY),Vector2.new(EX,EY),2, Color).Parent = par;
+	return par;
+end
+
+function DrawHealthBar(Target,currenthealth,maxhealth)
+	local par = Instance.new("Frame",FullScreen);
+	par.Size = UDim2.new(1,0,1,0)
+	par.Transparency = 1
+
+	local SX = Target.X-(25)
+	local SY = Target.Y-(185/(Target.Z/10))
+	local EX = Target.X+(25)
+
+	local BG = DrawLine(Vector2.new(SX,SY),Vector2.new(EX,SY),4,Color3.new(1,0,0))
+	BG.Parent = par;
+
+	local healthpur = currenthealth/maxhealth
+	local EH = Target.X+(-(25)+(50)*healthpur)
+
+	local CH = DrawLine(Vector2.new(SX,SY),Vector2.new(EH,SY),4,Color3.new(0,1,0))
+	CH.Parent = par;
+	return par;
+end
+
+function DrawName(Target,Name,color)
+	local Naem = Instance.new("TextLabel",FullScreen)
+	Naem.Size = UDim2.new(0,0,0,0)
+	if HealthEsp == true then
+		Naem.Position = UDim2.new(0,Target.X,0,Target.Y - (190/(Target.Z/10)))
+	else
+		Naem.Position = UDim2.new(0,Target.X,0,Target.Y - (175/(Target.Z/10)))
+	end
+	Naem.Text = Name
+	Naem.TextYAlignment = Enum.TextYAlignment.Bottom
+	Naem.BackgroundTransparency = 1
+	Naem.TextColor3 = color
+	return Naem;
+end
+
+function GetDistance(Target1,Target2)
+	if Target1 ~= nil and Target2 ~= nil then
+		if Target1:IsA("BasePart") and Target2:IsA("BasePart") then
+			return math.floor((Target1.Position - Target2.Position).magnitude);
+		end
+		return nil;
+	end
+	return nil;
+end
+
+function DrawDistance(Target1,Target2,color)
+	local Distance = nil;
+	if LocalPlayer ~= nil then
+		if LocalPlayer.Character ~= nil then
+			if LocalPlayer.Character:FindFirstChild("Torso") ~= nil then
+				Distance = GetDistance(LocalPlayer.Character:FindFirstChild("Torso"),Target2)
+			end
+		end
+	else
+		LocalPlayer = game.Players.LocalPlayer;
+	end
+
+	if Distance ~= nil then
+		local DDistance = Instance.new("TextLabel",FullScreen)
+		DDistance.Size = UDim2.new(0,0,0,0)
+		DDistance.Position = UDim2.new(0,Target1.X,0,Target1.Y + (255/(Target1.Z/10)))
+		DDistance.Text = tostring(Distance) .. " Studs";
+		DDistance.TextYAlignment = Enum.TextYAlignment.Top
+		DDistance.BackgroundTransparency = 1
+		DDistance.TextColor3 = color
+		return DDistance;
+	end
+	return nil;
+end
+
+
+spawn(function()
+	game:GetService('RunService').Stepped:connect(function()
+		pcall(function()
+			if EnableEsp == true then
+				FullScreen:ClearAllChildren()
+				local CrossHairSize = 50;
+				local HalfCrossHairSize = CrossHairSize/2;
+				if CrossHair == true then
+					local Cpos1 = (FullScreen.AbsoluteSize.x/2) - HalfCrossHairSize;
+					local Cpos2 = (FullScreen.AbsoluteSize.y/2);
+					local Cpos3 = (FullScreen.AbsoluteSize.x/2) + HalfCrossHairSize;
+					local Cpos4 = (FullScreen.AbsoluteSize.y/2);
+					local Line = DrawLine(
+						Vector2.new(Cpos1,Cpos2)
+						,Vector2.new(Cpos3,Cpos4)
+						,2
+						,CrossHairColor
+					);
+					Line.Parent = FullScreen;
+
+					local Cpos1 = (FullScreen.AbsoluteSize.x/2);
+					local Cpos2 = (FullScreen.AbsoluteSize.y/2) - HalfCrossHairSize;
+					local Cpos3 = (FullScreen.AbsoluteSize.x/2);
+					local Cpos4 = (FullScreen.AbsoluteSize.y/2) + HalfCrossHairSize;
+					local Line = DrawLine(
+						Vector2.new(Cpos1,Cpos2)
+						,Vector2.new(Cpos3,Cpos4)
+						,2
+						,CrossHairColor
+					);
+					Line.Parent = FullScreen;
+				end
+				for i,v in pairs(Players:GetChildren()) do
+					if (EspMe == false and v.Name ~= LocalPlayer.Name) or EspMe == true then
+						if ((EspMyTeam == false and v.TeamColor == LocalPlayer.TeamColor) or (EspEnemyTeam == false and v.TeamColor ~= LocalPlayer.TeamColor) and v.Neutral == false) then
+							--He's DED!!! not allowed to get ESP
+						else
+							if v.Character ~= nil then
+								local Char = v.Character
+								local Torso = Char:FindFirstChild'Torso'
+								if Torso ~= nil then
+									if BehindWarning == true then
+										if LocalPlayer.Character ~= nil then
+											if LocalPlayer.Character:FindFirstChild("Torso") ~= nil then
+												local myTorso = LocalPlayer.Character:FindFirstChild("Torso")
+												local warnval = ((Torso.Position-myTorso.CFrame.p).unit+myTorso.CFrame.lookVector).magnitude
+												if math.floor((Torso.Position - myTorso.Position).magnitude) <= 75 and warnval <= 0.6 then
+													local Warn = Instance.new("TextLabel",FullScreen)
+													Warn.Size = UDim2.new(1,0,0,100)
+													Warn.Position = UDim2.new(0,0,0,0)
+													Warn.TextScaled = true;
+													Warn.Text = "BEHIND YOU!"
+													Warn.TextYAlignment = Enum.TextYAlignment.Bottom
+													Warn.BackgroundTransparency = 1
+													Warn.TextColor3 = Color3.new(1,0,0)
+												end
+											end
+										end
+									end
+
+									local pos = W2S(Torso.Position)
+									local val = ((Torso.Position-Camera.CFrame.p).unit+Camera.CFrame.lookVector).magnitude
+									if val <= 1.55 then
+										--DED #out of screen
+									else
+										local TeamColor;
+										if UseTeamColor == true then
+											TeamColor = v.TeamColor.Color
+										end
+										if EspBox == true then
+											if UseTeamColor == false then
+												local esp2dBox = Draw2DEspBox(pos,EspBoxColor)
+												esp2dBox.Parent = FullScreen
+											else
+												local esp2dBox = Draw2DEspBox(pos,TeamColor)
+												esp2dBox.Parent = FullScreen
+											end
+										end
+										if LineEsp == true then
+											local YPosScreen = FullScreen.AbsoluteSize.y;
+											local TargetY = Vector2.new(pos.X,pos.Y+(250/(pos.Z/10)));
+											if CenterOfScreen == true then
+												YPosScreen = (FullScreen.AbsoluteSize.y/2);
+											elseif TopOfScreen == true then
+												YPosScreen = 0;
+												TargetY = Vector2.new(pos.X,pos.Y-(170/(pos.Z/10)));
+											end
+											if EspBox == true then
+												if UseTeamColor == false then
+													local Line = DrawLine(Vector2.new(FullScreen.AbsoluteSize.x/2,YPosScreen),TargetY,2,EspBoxColor);
+													Line.Parent = FullScreen
+												else
+													local Line = DrawLine(Vector2.new(FullScreen.AbsoluteSize.x/2,YPosScreen),TargetY,2,TeamColor);
+													Line.Parent = FullScreen
+												end
+											else
+												if UseTeamColor == false then
+													local Line = DrawLine(Vector2.new(FullScreen.AbsoluteSize.x/2,YPosScreen),Vector2.new(pos.X,pos.Y),2,EspBoxColor);
+													Line.Parent = FullScreen
+												else
+													local Line = DrawLine(Vector2.new(FullScreen.AbsoluteSize.x/2,YPosScreen),Vector2.new(pos.X,pos.Y),2,TeamColor);
+													Line.Parent = FullScreen
+												end
+											end
+										end
+										if HealthEsp == true then
+											if Char:FindFirstChild("Humanoid") ~= nil then
+												local Humanoid = Char:FindFirstChild("Humanoid")
+												local espHealthBar = DrawHealthBar(pos,Humanoid.Health,Humanoid.MaxHealth)
+												espHealthBar.Parent = FullScreen
+											end
+										end
+										if NameEsp == true then
+											if UseTeamColor == false then
+												local espnametag = DrawName(pos,v.Name,EspBoxColor)
+												espnametag.Parent = FullScreen
+											else
+												local espnametag = DrawName(pos,v.Name,TeamColor)
+												espnametag.Parent = FullScreen
+											end
+										end
+										if uDrawDistance == true then
+											if UseTeamColor == false then
+												local DrawDistanceTag = DrawDistance(pos,Torso,EspBoxColor)
+												DrawDistanceTag.Parent = FullScreen
+											else
+												local DrawDistanceTag = DrawDistance(pos,Torso,TeamColor)
+												DrawDistanceTag.Parent = FullScreen
+											end
+										end
+									end
+								end
+							end
+						end
+					end
+				end
+			else
+				for i,v in pairs(FullScreen:GetChildren()) do
+					if v ~= nil then
+						v:Remove()
+					end
+				end
+			end
+		end)
+	end)
+end)
+
+TinyHubNotification("KrystalTeam","Thank you for using Ro-Xploit tiny hub.","rbxassetid://278201073", 5)
